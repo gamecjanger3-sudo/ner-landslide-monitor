@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
-import { Weather } from './components/Weather.tsx'
+import Weather from './components/Weather'
 import { LocationAlertModal } from './components/LocationAlertModal'
 
 // Pages
