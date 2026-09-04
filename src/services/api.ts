@@ -1,4 +1,4 @@
-const BASE_URL = 'https://sih-ps-01.onrender.com';
+const BASE_URL = 'https://ner-landslide-monitor-pj1l.onrender.com';
 
 export interface ReportData {
   title: string;
