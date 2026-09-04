@@ -1,0 +1,85 @@
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import multer from 'multer';
+
+const app = express();
+
+// Enable CORS for frontend requests
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Configure Multer (memoryStorage avoids filesystem write permissions on Render)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// In-memory reports store
+const reportsStore: any[] = [];
+
+// GET /api/reports - Fetch all reports
+app.get('/api/reports', (req: Request, res: Response) => {
+  res.status(200).json({
+    count: reportsStore.length,
+    reports: reportsStore,
+  });
+});
+
+// POST /api/reports - Submit a new report
+app.post(
+  '/api/reports',
+  upload.array('attachments'),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const {
+        title,
+        location,
+        category,
+        severity,
+        description,
+        reporterName,
+        reporterContact,
+        latitude,
+        longitude,
+      } = req.body;
+
+      const newReport = {
+        id: `report_${Date.now()}`,
+        title,
+        location,
+        category,
+        severity,
+        description,
+        reporterName: reporterName || null,
+        reporterContact: reporterContact || null,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        attachmentsCount: req.files ? (req.files as Express.Multer.File[]).length : 0,
+        createdAt: new Date().toISOString(),
+      };
+
+      reportsStore.push(newReport);
+
+      res.status(201).json({
+        success: true,
+        message: 'Report created successfully',
+        report: newReport,
+      });
+    } catch (error: any) {
+      console.error('Error saving report:', error);
+      res.status(500).json({ error: error.message || 'Internal Server Error' });
+    }
+  }
+);
+
+// Start Server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
