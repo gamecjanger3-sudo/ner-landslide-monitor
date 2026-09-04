@@ -3,16 +3,13 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(), // <--- Add Tailwind Vite plugin here
-  ],
+  plugins: [react(), tailwindcss()],
   preview: {
-    host: '0.0.0.0',
-    allowedHosts: true,
+    host: true,
+    allowedHosts: ['ner-landslide-monitor-pj1l.onrender.com', '.onrender.com'],
   },
   server: {
-    host: '0.0.0.0',
-    allowedHosts: true,
+    host: true,
+    allowedHosts: ['ner-landslide-monitor-pj1l.onrender.com', '.onrender.com'],
   },
 });
