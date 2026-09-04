@@ -97,7 +97,8 @@ app.post(
 app.use(express.static(path.resolve(__dirname, 'dist')));
 
 // SPA Fallback: Return index.html for non-API web routes
-app.get('*', (req: Request, res: Response) => {
+// NEW (Express 5 syntax)
+app.get('/{*path}', (req: Request, res: Response) => {
   if (req.path.startsWith('/api')) {
     res.status(404).json({ error: 'API endpoint not found' });
     return;
