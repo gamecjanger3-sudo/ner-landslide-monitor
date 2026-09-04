@@ -4,16 +4,17 @@ import Sidebar from './components/Sidebar'
 import { Weather } from './components/Weather.tsx'
 import { LocationAlertModal } from './components/LocationAlertModal'
 
-// Import all your actual page components from src/pages
+// Pages
 import Dashboard from './pages/Dashboard'
 import Alerts from './pages/Alerts'
 import Reports from './pages/Reports'
 import RiskMap from './pages/RiskMap'
 import Settings from './pages/Settings'
+import NotFound from './pages/NotFound'
 
 export function App() {
   const [isAuthorized, setIsAuthorized] = useState<boolean>(false)
-  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
+  const [, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
 
   const handleAccessGranted = (coords: { lat: number; lon: number }) => {
     setUserLocation(coords)
@@ -23,22 +24,13 @@ export function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-slate-50 text-slate-900 relative">
-        {/* 1. Location & Landslide Advisory Modal */}
         {!isAuthorized && <LocationAlertModal onAccessGranted={handleAccessGranted} />}
 
-        {/* 2. Main App Content */}
         <div className={`flex min-h-screen ${!isAuthorized ? 'blur-sm pointer-events-none select-none' : ''}`}>
           <Sidebar />
 
-          <main className="flex-1 p-8 overflow-y-auto">
-            {userLocation && (
-              <div className="mb-6 flex justify-end">
-                <span className="text-xs bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full border border-slate-300 font-mono">
-                  📍 Verified Location: {userLocation.lat.toFixed(4)}, {userLocation.lon.toFixed(4)}
-                </span>
-              </div>
-            )}
-
+          {/* Added pt-20 pl-16 so page headers and buttons like "Sync NASA Feed" sit safely below floating top elements */}
+          <main className="flex-1 p-8 pt-20 pl-16 overflow-y-auto">
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
@@ -47,7 +39,9 @@ export function App() {
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
+              {/* Catch-all route to display 404 page */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
         </div>

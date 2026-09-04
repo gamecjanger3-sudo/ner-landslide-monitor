@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   TriangleAlert,
@@ -23,7 +24,8 @@ import RiskCard from "../components/RiskCard";
 import { fetchWeatherByCity } from "../services/weatherService";
 import type { WeatherData } from "../services/weatherService";
 
-function Dashboard() {
+export default function Dashboard() {
+  const { t } = useTranslation();
   const [city, setCity] = useState("Shillong");
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -69,7 +71,7 @@ function Dashboard() {
     <div className="space-y-6">
       {/* Page heading */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-slate-900">{t("dashboard")}</h1>
 
         <p className="mt-1 text-slate-500">
           Real-time overview of landslide risk across the North Eastern Region.
@@ -166,7 +168,7 @@ function Dashboard() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">
-                  Live Weather
+                  {t("weather")}
                 </h2>
                 <p className="text-sm text-slate-500">
                   Real-time API monitoring
@@ -252,7 +254,8 @@ function Dashboard() {
                   </div>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                     {weather.weather && weather.weather[0]
-                      ? weather.weather[0].main : "N/A"}
+                      ? weather.weather[0].main
+                      : "N/A"}
                   </span>
                 </div>
               </div>
@@ -347,5 +350,3 @@ function Dashboard() {
     </div>
   );
 }
-
-export default Dashboard;

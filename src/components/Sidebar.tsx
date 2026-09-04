@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard,
   Map,
@@ -6,37 +7,125 @@ import {
   FileText,
   Settings,
   CloudSun,
-  MoreVertical,
+  Menu,
   X,
+  HelpCircle,
+  Globe,
+  ChevronDown,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
+const LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'hi', name: 'Hindi (हिंदी)' },
+  { code: 'bn', name: 'Bengali (বাংলা)' },
+  { code: 'as', name: 'Assamese (অসমীয়া)' },
+  { code: 'brx', name: 'Bodo (बर\')' },
+  { code: 'doi', name: 'Dogri (डोगरी)' },
+  { code: 'gu', name: 'Gujarati (ગુજરાતી)' },
+  { code: 'kn', name: 'Kannada (ಕನ್ನಡ)' },
+  { code: 'ks', name: 'Kashmiri (कश्मीरी)' },
+  { code: 'kok', name: 'Konkani (कोंकणी)' },
+  { code: 'mai', name: 'Maithili (मैथिली)' },
+  { code: 'ml', name: 'Malayalam (മലയാളം)' },
+  { code: 'mni', name: 'Manipuri (মইতেইলোন্)' },
+  { code: 'mr', name: 'Marathi (मराठी)' },
+  { code: 'ne', name: 'Nepali (नेपाली)' },
+  { code: 'or', name: 'Odia (ଓଡ଼ିଆ)' },
+  { code: 'pa', name: 'Punjabi (ਪੰਜਾਬੀ)' },
+  { code: 'sa', name: 'Sanskrit (संस्कृतम्)' },
+  { code: 'sat', name: 'Santali (ᱥᱟᱱᱛᱟᱲᱤ)' },
+  { code: 'sd', name: 'Sindhi (सिन्धी)' },
+  { code: 'ta', name: 'Tamil (தமிழ்)' },
+  { code: 'te', name: 'Telugu (తెలుగు)' },
+  { code: 'ur', name: 'Urdu (اُردُو)' },
+]
+
 function Sidebar() {
+  const { t, i18n } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
+  const [selectedLang, setSelectedLang] = useState('English')
+  const [isLangOpen, setIsLangOpen] = useState(false)
+
+  const handleLanguageChange = (code: string, name: string) => {
+    i18n.changeLanguage(code)
+    setSelectedLang(name.split(' ')[0])
+    setIsLangOpen(false)
+  }
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Risk Map', path: '/risk-map', icon: Map },
-    { name: 'Weather', path: '/weather', icon: CloudSun },
-    { name: 'Alerts', path: '/alerts', icon: Bell },
-    { name: 'Reports', path: '/reports', icon: FileText },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: t('dashboard'), path: '/dashboard', icon: LayoutDashboard },
+    { name: t('riskMap'), path: '/risk-map', icon: Map },
+    { name: t('weather'), path: '/weather', icon: CloudSun },
+    { name: t('alerts'), path: '/alerts', icon: Bell },
+    { name: t('reports'), path: '/reports', icon: FileText },
+    { name: t('settings'), path: '/settings', icon: Settings },
   ]
 
   return (
     <>
-      {/* 1. Three-Dot Button: z-[9990] puts it above map tiles */}
+      {/* 1. Hamburger Toggle Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed top-4 left-4 z-[9990] p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 shadow-xl transition-all"
+          className="fixed top-4 left-4 z-[9990] p-2.5 rounded-xl bg-sky-500 border border-sky-400 text-white hover:bg-sky-600 shadow-xl transition-all"
           title="Open menu"
         >
-          <MoreVertical size={22} />
+          <Menu size={22} />
         </button>
       )}
 
-      {/* 2. Backdrop Blur Overlay: z-[9998] dims the map underneath */}
+      {/* 2. Top Right Control Bar */}
+      <div className="fixed top-4 right-4 z-[9990] flex items-start gap-3 pointer-events-auto">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 text-xs font-medium text-slate-700 shadow-md backdrop-blur-sm shrink-0">
+          <span>📍</span>
+          <span>{t('verifiedLocation')}: 26.4860, 80.3356</span>
+        </div>
+
+        <div className="flex flex-col gap-2 items-end relative">
+          <button
+            onClick={() => alert('Opening Help Desk support...')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-600 border border-blue-500 text-white text-xs font-medium hover:bg-blue-700 shadow-md transition-all shrink-0 w-36 justify-center"
+          >
+            <HelpCircle size={15} />
+            <span>{t('helpDesk')}</span>
+          </button>
+
+          <div className="relative">
+            <button
+              onClick={() => setIsLangOpen(!isLangOpen)}
+              className="flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-md transition-all w-36"
+            >
+              <div className="flex items-center gap-1.5 truncate">
+                <Globe size={14} className="text-blue-600 shrink-0" />
+                <span className="truncate">{selectedLang}</span>
+              </div>
+              <ChevronDown size={14} className={`shrink-0 transition-transform ${isLangOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isLangOpen && (
+              <div className="absolute right-0 mt-1 w-52 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-2xl z-[9999] py-1 text-xs">
+                <div className="px-3 py-1.5 font-semibold text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                  Select Language
+                </div>
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => handleLanguageChange(lang.code, lang.name)}
+                    className={`w-full text-left px-3 py-2 hover:bg-slate-100 transition flex items-center justify-between ${
+                      i18n.language === lang.code ? 'font-bold text-blue-600 bg-blue-50' : 'text-slate-700'
+                    }`}
+                  >
+                    <span>{lang.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Backdrop Blur */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
@@ -44,34 +133,30 @@ function Sidebar() {
         />
       )}
 
-      {/* 3. Sidebar Drawer: z-[9999] forces it on TOP of all map elements */}
+      {/* 4. Sidebar Drawer */}
       <aside
         className={`fixed top-0 left-0 h-screen bg-slate-900 text-white border-r border-slate-800 z-[9999] transition-transform duration-300 ease-in-out w-64 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Header */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-slate-800">
           <div>
             <h1 className="text-xl font-bold whitespace-nowrap">NER-SAFE</h1>
             <p className="text-xs text-slate-400 whitespace-nowrap">
-              Landslide Monitoring
+              {t('landslideMonitoring')}
             </p>
           </div>
           <button
             onClick={() => setIsOpen(false)}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-            title="Close menu"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="p-4 space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon
-
             return (
               <NavLink
                 key={item.path}
