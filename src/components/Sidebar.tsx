@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard,
@@ -20,36 +20,36 @@ const LANGUAGES = [
   { code: 'hi', name: 'Hindi (हिंदी)' },
   { code: 'bn', name: 'Bengali (বাংলা)' },
   { code: 'as', name: 'Assamese (অসমীয়া)' },
-  { code: 'brx', name: 'Bodo (बर\')' },
-  { code: 'doi', name: 'Dogri (डोगरी)' },
-  { code: 'gu', name: 'Gujarati (ગુજરાતી)' },
-  { code: 'kn', name: 'Kannada (ಕನ್ನಡ)' },
-  { code: 'ks', name: 'Kashmiri (कश्मीरी)' },
-  { code: 'kok', name: 'Konkani (कोंकणी)' },
-  { code: 'mai', name: 'Maithili (मैथिली)' },
-  { code: 'ml', name: 'Malayalam (മലയാളം)' },
-  { code: 'mni', name: 'Manipuri (মইতেইলোন্)' },
-  { code: 'mr', name: 'Marathi (मराठी)' },
   { code: 'ne', name: 'Nepali (नेपाली)' },
-  { code: 'or', name: 'Odia (ଓଡ଼ିଆ)' },
-  { code: 'pa', name: 'Punjabi (ਪੰਜਾਬੀ)' },
-  { code: 'sa', name: 'Sanskrit (संस्कृतम्)' },
-  { code: 'sat', name: 'Santali (ᱥᱟᱱᱛᱟᱲᱤ)' },
-  { code: 'sd', name: 'Sindhi (सिन्धी)' },
-  { code: 'ta', name: 'Tamil (தமிழ்)' },
-  { code: 'te', name: 'Telugu (తెలుగు)' },
-  { code: 'ur', name: 'Urdu (اُردُو)' },
 ]
 
 function Sidebar() {
   const { t, i18n } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
-  const [selectedLang, setSelectedLang] = useState('English')
   const [isLangOpen, setIsLangOpen] = useState(false)
+  const langDropdownRef = useRef<HTMLDivElement>(null)
 
-  const handleLanguageChange = (code: string, name: string) => {
+  // Get active display name from current i18n language
+  const currentLangObj = LANGUAGES.find((l) => l.code === i18n.language) || LANGUAGES[0]
+  const selectedLang = currentLangObj.name.split(' ')[0]
+
+  // Close language dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        langDropdownRef.current &&
+        !langDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsLangOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleLanguageChange = (code: string) => {
     i18n.changeLanguage(code)
-    setSelectedLang(name.split(' ')[0])
+    localStorage.setItem('appLanguage', code) // Persist selection to LocalStorage
     setIsLangOpen(false)
   }
 
@@ -79,10 +79,12 @@ function Sidebar() {
       <div className="fixed top-4 right-4 z-[9990] flex items-start gap-3 pointer-events-auto">
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 text-xs font-medium text-slate-700 shadow-md backdrop-blur-sm shrink-0">
           <span>📍</span>
-          <span>{t('verifiedLocation')}: 26.4860, 80.3356</span>
+          <span>
+            {t('verifiedLocation')}: 26.4860, 80.3356
+          </span>
         </div>
 
-        <div className="flex flex-col gap-2 items-end relative">
+        <div className="flex flex-col gap-2 items-end relative" ref={langDropdownRef}>
           <button
             onClick={() => alert('Opening Help Desk support...')}
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-600 border border-blue-500 text-white text-xs font-medium hover:bg-blue-700 shadow-md transition-all shrink-0 w-36 justify-center"
@@ -100,7 +102,12 @@ function Sidebar() {
                 <Globe size={14} className="text-blue-600 shrink-0" />
                 <span className="truncate">{selectedLang}</span>
               </div>
-              <ChevronDown size={14} className={`shrink-0 transition-transform ${isLangOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                size={14}
+                className={`shrink-0 transition-transform ${
+                  isLangOpen ? 'rotate-180' : ''
+                }`}
+              />
             </button>
 
             {isLangOpen && (
@@ -111,9 +118,11 @@ function Sidebar() {
                 {LANGUAGES.map((lang) => (
                   <button
                     key={lang.code}
-                    onClick={() => handleLanguageChange(lang.code, lang.name)}
+                    onClick={() => handleLanguageChange(lang.code)}
                     className={`w-full text-left px-3 py-2 hover:bg-slate-100 transition flex items-center justify-between ${
-                      i18n.language === lang.code ? 'font-bold text-blue-600 bg-blue-50' : 'text-slate-700'
+                      i18n.language === lang.code
+                        ? 'font-bold text-blue-600 bg-blue-50'
+                        : 'text-slate-700'
                     }`}
                   >
                     <span>{lang.name}</span>

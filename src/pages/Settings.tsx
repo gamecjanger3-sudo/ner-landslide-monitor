@@ -1,22 +1,62 @@
-import {
-  Bell,
-  Wifi,
-  Languages,
-  Save,
-} from 'lucide-react'
-import { useState } from 'react'
+import { Bell, Wifi, Languages, Save } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+
+// Language mapping to match i18next language codes
+const LANGUAGE_CODES: Record<string, string> = {
+  English: 'en',
+  Hindi: 'hi',
+  Bengali: 'bn',
+  Assamese: 'as',
+  Nepali: 'ne',
+  Manipuri: 'en', // Fallback to 'en' if resource not present
+  Mizo: 'en',
+  Khasi: 'en',
+}
+
+const REVERSE_LANGUAGE_CODES: Record<string, string> = {
+  en: 'English',
+  hi: 'Hindi',
+  bn: 'Bengali',
+  as: 'Assamese',
+  ne: 'Nepali',
+}
 
 function Settings() {
-  const [language, setLanguage] = useState('English')
+  const { t, i18n } = useTranslation()
+
+  // Sync internal state with active i18next language
+  const [language, setLanguage] = useState(
+    () => REVERSE_LANGUAGE_CODES[i18n.language] || 'English'
+  )
   const [notifications, setNotifications] = useState(true)
   const [criticalAlerts, setCriticalAlerts] = useState(true)
   const [highAlerts, setHighAlerts] = useState(true)
   const [offlineMode, setOfflineMode] = useState(true)
   const [saved, setSaved] = useState(false)
 
-  const handleSave = () => {
-    setSaved(true)
+  // Keep dropdown selection updated if global language changes elsewhere (e.g. Sidebar)
+  useEffect(() => {
+    if (REVERSE_LANGUAGE_CODES[i18n.language]) {
+      setLanguage(REVERSE_LANGUAGE_CODES[i18n.language])
+    }
+  }, [i18n.language])
 
+  const handleLanguageChange = (selectedLang: string) => {
+    setLanguage(selectedLang)
+    const langCode = LANGUAGE_CODES[selectedLang] || 'en'
+    
+    // Update i18next and persist code to localStorage
+    i18n.changeLanguage(langCode)
+    localStorage.setItem('appLanguage', langCode)
+  }
+
+  const handleSave = () => {
+    // Explicitly make sure current language selection is written to localStorage
+    const langCode = LANGUAGE_CODES[language] || 'en'
+    localStorage.setItem('appLanguage', langCode)
+
+    setSaved(true)
     setTimeout(() => {
       setSaved(false)
     }, 3000)
@@ -24,18 +64,15 @@ function Settings() {
 
   return (
     <div className="space-y-6">
-
       {/* Heading */}
       <div>
         <h1 className="text-3xl font-bold text-slate-900">
-          Settings
+          {t('settingsTitle')}
         </h1>
-
         <p className="mt-1 text-slate-500">
-          Manage language, notifications and offline monitoring preferences.
+          {t('settingsSubtitle')}
         </p>
       </div>
-
 
       {/* Success message */}
       {saved && (
@@ -44,199 +81,147 @@ function Settings() {
         </div>
       )}
 
-
       {/* Language */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-
         <div className="flex items-center gap-3 mb-6">
-
           <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
             <Languages size={22} />
           </div>
-
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              Language
+              {t('language')}
             </h2>
-
             <p className="text-sm text-slate-500">
-              Select your preferred notification language.
+              {t('selectPreferredLanguage')}
             </p>
           </div>
-
         </div>
-
 
         <select
           value={language}
-          onChange={(event) => setLanguage(event.target.value)}
+          onChange={(event) => handleLanguageChange(event.target.value)}
           className="w-full md:w-96 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400"
         >
-          <option>English</option>
-          <option>Hindi</option>
-          <option>Assamese</option>
-          <option>Bengali</option>
-          <option>Manipuri</option>
-          <option>Mizo</option>
-          <option>Khasi</option>
-          <option>Nepali</option>
+          <option value="English">English</option>
+          <option value="Hindi">Hindi (हिंदी)</option>
+          <option value="Assamese">Assamese (অসমীয়া)</option>
+          <option value="Bengali">Bengali (বাংলা)</option>
+          <option value="Nepali">Nepali (नेपाली)</option>
+          <option value="Manipuri">Manipuri</option>
+          <option value="Mizo">Mizo</option>
+          <option value="Khasi">Khasi</option>
         </select>
-
       </div>
-
 
       {/* Notifications */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-
         <div className="flex items-center gap-3 mb-6">
-
           <div className="p-3 bg-orange-100 text-orange-600 rounded-lg">
             <Bell size={22} />
           </div>
-
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              Notifications
+              {t('notifications')}
             </h2>
-
             <p className="text-sm text-slate-500">
-              Control which disaster alerts you receive.
+              {t('controlAlerts')}
             </p>
           </div>
-
         </div>
-
 
         {/* Main notifications */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
-
           <div>
             <p className="font-medium text-slate-800">
-              Enable Notifications
+              {t('enableNotifications')}
             </p>
-
             <p className="text-sm text-slate-500">
-              Receive disaster and landslide warnings.
+              {t('receiveWarnings')}
             </p>
           </div>
-
           <input
             type="checkbox"
             checked={notifications}
-            onChange={(event) =>
-              setNotifications(event.target.checked)
-            }
-            className="w-5 h-5"
+            onChange={(event) => setNotifications(event.target.checked)}
+            className="w-5 h-5 cursor-pointer"
           />
-
         </div>
-
 
         {/* Critical alerts */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
-
           <div>
             <p className="font-medium text-slate-800">
-              Critical Alerts
+              {t('criticalAlerts')}
             </p>
-
             <p className="text-sm text-slate-500">
-              Receive immediate warnings for critical zones.
+              {t('receiveImmediateWarnings')}
             </p>
           </div>
-
           <input
             type="checkbox"
             checked={criticalAlerts}
-            onChange={(event) =>
-              setCriticalAlerts(event.target.checked)
-            }
+            onChange={(event) => setCriticalAlerts(event.target.checked)}
             disabled={!notifications}
-            className="w-5 h-5"
+            className="w-5 h-5 cursor-pointer"
           />
-
         </div>
-
 
         {/* High alerts */}
         <div className="flex items-center justify-between py-4">
-
           <div>
             <p className="font-medium text-slate-800">
-              High Risk Alerts
+              {t('highRiskAlerts')}
             </p>
-
             <p className="text-sm text-slate-500">
-              Receive warnings for high-risk areas.
+              {t('receiveHighRiskWarnings')}
             </p>
           </div>
-
           <input
             type="checkbox"
             checked={highAlerts}
-            onChange={(event) =>
-              setHighAlerts(event.target.checked)
-            }
+            onChange={(event) => setHighAlerts(event.target.checked)}
             disabled={!notifications}
-            className="w-5 h-5"
+            className="w-5 h-5 cursor-pointer"
           />
-
         </div>
-
       </div>
-
 
       {/* Offline mode */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-
         <div className="flex items-center gap-3 mb-6">
-
           <div className="p-3 bg-green-100 text-green-600 rounded-lg">
             <Wifi size={22} />
           </div>
-
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              Offline Mode
+              {t('offlineMode')}
             </h2>
-
             <p className="text-sm text-slate-500">
-              Useful for remote areas with limited network connectivity.
+              {t('usefulRemoteAreas')}
             </p>
           </div>
-
         </div>
 
-
         <div className="flex items-center justify-between">
-
           <div>
             <p className="font-medium text-slate-800">
-              Enable Offline Sync
+              {t('enableOfflineSync')}
             </p>
-
             <p className="text-sm text-slate-500">
               Store reports locally and synchronize when the network returns.
             </p>
           </div>
-
           <input
             type="checkbox"
             checked={offlineMode}
-            onChange={(event) =>
-              setOfflineMode(event.target.checked)
-            }
-            className="w-5 h-5"
+            onChange={(event) => setOfflineMode(event.target.checked)}
+            className="w-5 h-5 cursor-pointer"
           />
-
         </div>
-
       </div>
-
 
       {/* Save button */}
       <div className="flex justify-end">
-
         <button
           onClick={handleSave}
           className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition"
@@ -244,9 +229,7 @@ function Settings() {
           <Save size={18} />
           Save Settings
         </button>
-
       </div>
-
     </div>
   )
 }
