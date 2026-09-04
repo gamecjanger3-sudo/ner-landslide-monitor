@@ -13,7 +13,7 @@ import {
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { submitLandslideReport, type ReportData } from '../services/api';
 
-// Helper component to trigger Leaflet re-centering on state changes
+// Helper component to re-center Leaflet map on coordinate changes
 function MapRecenter({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function Reports() {
     text: string;
   } | null>(null);
 
-  // Position fallback for Leaflet Map
+  // Map default location (East Khasi Hills, Meghalaya fallback)
   const mapPosition: [number, number] =
     latitude && longitude
       ? [Number(latitude), Number(longitude)]
@@ -63,7 +63,7 @@ export default function Reports() {
     }));
   };
 
-  // Handle File Uploads (Append new files rather than overwriting)
+  // Handle File Uploads
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const selectedFiles = Array.from(event.target.files);
@@ -71,12 +71,12 @@ export default function Reports() {
     }
   };
 
-  // Remove individual file from attachments
+  // Remove Attachment
   const handleRemoveFile = (indexToRemove: number) => {
     setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
-  // Geolocation Lookup
+  // Browser Geolocation API
   const getLocation = () => {
     if (!navigator.geolocation) {
       setStatusMessage({
@@ -93,7 +93,6 @@ export default function Reports() {
         setLatitude(lat);
         setLongitude(lng);
 
-        // Auto-fill location text field if empty
         if (!formData.location) {
           setFormData((prev) => ({
             ...prev,
@@ -110,13 +109,13 @@ export default function Reports() {
     );
   };
 
-  // Submit Handler
+  // Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setStatusMessage(null);
 
-    // Form Validations
+    // Validation
     if (!formData.title.trim()) {
       setStatusMessage({ type: 'error', text: 'Please enter an incident title.' });
       setLoading(false);
@@ -144,7 +143,7 @@ export default function Reports() {
       return;
     }
 
-    // File size validation (Max: 50MB per file)
+    // Max File Size Check (50MB)
     const maxFileSize = 50 * 1024 * 1024;
     const oversizedFile = files.find((file) => file.size > maxFileSize);
     if (oversizedFile) {
@@ -157,7 +156,7 @@ export default function Reports() {
     }
 
     try {
-      const payload = {
+      const payload: ReportData = {
         ...formData,
         latitude: lat,
         longitude: lng,
@@ -171,7 +170,7 @@ export default function Reports() {
         text: 'Report successfully submitted to emergency telemetry!',
       });
 
-      // Reset form state on successful submission
+      // Clear Form Fields
       setFormData({
         title: '',
         location: '',
@@ -184,10 +183,10 @@ export default function Reports() {
       setLatitude('');
       setLongitude('');
       setFiles([]);
-    } catch (err) {
+    } catch (err: any) {
       setStatusMessage({
         type: 'error',
-        text: 'Failed to submit report. Please check server connectivity or try again.',
+        text: err.message || 'Failed to submit report. Please check server connectivity.',
       });
     } finally {
       setLoading(false);
@@ -196,7 +195,6 @@ export default function Reports() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Field Incident Report</h1>
         <p className="mt-1 text-slate-500">
@@ -204,7 +202,6 @@ export default function Reports() {
         </p>
       </div>
 
-      {/* Status Feedback Message */}
       {statusMessage && (
         <div
           className={`p-4 rounded-xl border flex items-center gap-3 ${
@@ -222,11 +219,9 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* LEFT COLUMN: Report Meta & Description */}
           <div className="space-y-5">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">
@@ -313,7 +308,6 @@ export default function Reports() {
               />
             </div>
 
-            {/* Reporter Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
               <div>
                 <label className="block text-sm font-medium text-slate-600 mb-1">
@@ -345,9 +339,7 @@ export default function Reports() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Map, Location Coordinates, Uploads */}
           <div className="space-y-5">
-            {/* Map and Coordinates */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-semibold text-slate-700">
@@ -405,7 +397,6 @@ export default function Reports() {
               </div>
             </div>
 
-            {/* Evidence Upload */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">
                 Media Attachments
@@ -434,7 +425,6 @@ export default function Reports() {
               </label>
             </div>
 
-            {/* Attachment Preview List with Remove Button */}
             {files.length > 0 && (
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
                 <p className="text-xs font-semibold text-slate-700 mb-2">
@@ -468,7 +458,6 @@ export default function Reports() {
               </div>
             )}
 
-            {/* Safety Notice */}
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3">
               <AlertTriangle size={18} className="text-amber-600 mt-0.5 shrink-0" />
               <div>
@@ -479,7 +468,6 @@ export default function Reports() {
               </div>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}

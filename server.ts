@@ -4,7 +4,7 @@ import multer from 'multer';
 
 const app = express();
 
-// Enable CORS for frontend requests
+// Enable CORS for all incoming requests (Vercel, Localhost, etc.)
 app.use(
   cors({
     origin: '*',
@@ -16,14 +16,17 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configure Multer (memoryStorage avoids filesystem write permissions on Render)
+// Configure Multer in memory to prevent write issues on Render's ephemeral filesystem
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB file size limit
+});
 
-// In-memory reports store
+// In-memory reports data store
 const reportsStore: any[] = [];
 
-// GET /api/reports - Fetch all reports
+// GET /api/reports - Retrieve all reported incidents
 app.get('/api/reports', (req: Request, res: Response) => {
   res.status(200).json({
     count: reportsStore.length,
@@ -31,7 +34,7 @@ app.get('/api/reports', (req: Request, res: Response) => {
   });
 });
 
-// POST /api/reports - Submit a new report
+// POST /api/reports - Endpoint receiving FormData from Reports.tsx
 app.post(
   '/api/reports',
   upload.array('attachments'),
@@ -49,6 +52,8 @@ app.post(
         longitude,
       } = req.body;
 
+      const uploadedFiles = req.files as Express.Multer.File[] | undefined;
+
       const newReport = {
         id: `report_${Date.now()}`,
         title,
@@ -60,7 +65,7 @@ app.post(
         reporterContact: reporterContact || null,
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
-        attachmentsCount: req.files ? (req.files as Express.Multer.File[]).length : 0,
+        attachmentsCount: uploadedFiles ? uploadedFiles.length : 0,
         createdAt: new Date().toISOString(),
       };
 
@@ -68,11 +73,11 @@ app.post(
 
       res.status(201).json({
         success: true,
-        message: 'Report created successfully',
+        message: 'Incident report submitted successfully',
         report: newReport,
       });
     } catch (error: any) {
-      console.error('Error saving report:', error);
+      console.error('Error handling report submission:', error);
       res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
   }
@@ -81,5 +86,5 @@ app.post(
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
