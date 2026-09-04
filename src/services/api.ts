@@ -16,21 +16,22 @@ export interface ReportData {
 export const submitLandslideReport = async (data: ReportData) => {
   const formData = new FormData();
 
-  // Append text attributes matching server.ts expected fields
-  formData.append('title', data.title);
-  formData.append('location', data.location);
+  // Append text fields expected by backend
+  formData.append('title', data.title.trim());
+  formData.append('location', data.location.trim());
   formData.append('category', data.category);
   formData.append('severity', data.severity);
-  formData.append('description', data.description);
+  formData.append('description', data.description.trim());
 
-  if (data.reporterName) {
-    formData.append('reporterName', data.reporterName);
+  if (data.reporterName && data.reporterName.trim() !== '') {
+    formData.append('reporterName', data.reporterName.trim());
   }
 
-  if (data.reporterContact) {
-    formData.append('reporterContact', data.reporterContact);
+  if (data.reporterContact && data.reporterContact.trim() !== '') {
+    formData.append('reporterContact', data.reporterContact.trim());
   }
 
+  // Only append coordinates if they are valid numbers
   if (data.latitude !== undefined && !isNaN(data.latitude)) {
     formData.append('latitude', data.latitude.toString());
   }
@@ -39,7 +40,7 @@ export const submitLandslideReport = async (data: ReportData) => {
     formData.append('longitude', data.longitude.toString());
   }
 
-  // Append file attachments under the key expected by Multer: upload.array('attachments')
+  // Append files under the 'attachments' key expected by Multer
   if (data.attachments && data.attachments.length > 0) {
     data.attachments.forEach((file) => {
       formData.append('attachments', file);
@@ -48,7 +49,7 @@ export const submitLandslideReport = async (data: ReportData) => {
 
   const response = await fetch(`${BASE_URL}/api/reports`, {
     method: 'POST',
-    // Do NOT set 'Content-Type' header here; browser sets boundary header automatically for FormData
+    // Do NOT set 'Content-Type' header here; browser auto-sets boundary for FormData
     body: formData,
   });
 

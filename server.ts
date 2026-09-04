@@ -4,7 +4,6 @@ import multer from 'multer';
 
 const app = express();
 
-// Enable CORS for all incoming requests (Vercel, Localhost, etc.)
 app.use(
   cors({
     origin: '*',
@@ -16,17 +15,15 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configure Multer in memory to prevent write issues on Render's ephemeral filesystem
+// Configure Multer in-memory storage (prevents write errors on Render's read-only/ephemeral disk)
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB file size limit
 });
 
-// In-memory reports data store
 const reportsStore: any[] = [];
 
-// GET /api/reports - Retrieve all reported incidents
 app.get('/api/reports', (req: Request, res: Response) => {
   res.status(200).json({
     count: reportsStore.length,
@@ -34,7 +31,6 @@ app.get('/api/reports', (req: Request, res: Response) => {
   });
 });
 
-// POST /api/reports - Endpoint receiving FormData from Reports.tsx
 app.post(
   '/api/reports',
   upload.array('attachments'),
@@ -52,19 +48,25 @@ app.post(
         longitude,
       } = req.body;
 
+      // Validate required text fields
+      if (!title || !location || !description) {
+        res.status(400).json({ error: 'Missing required report fields (title, location, description).' });
+        return;
+      }
+
       const uploadedFiles = req.files as Express.Multer.File[] | undefined;
 
       const newReport = {
         id: `report_${Date.now()}`,
         title,
         location,
-        category,
-        severity,
+        category: category || 'Landslide',
+        severity: severity || 'high',
         description,
         reporterName: reporterName || null,
         reporterContact: reporterContact || null,
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
+        latitude: latitude && !isNaN(Number(latitude)) ? Number(latitude) : null,
+        longitude: longitude && !isNaN(Number(longitude)) ? Number(longitude) : null,
         attachmentsCount: uploadedFiles ? uploadedFiles.length : 0,
         createdAt: new Date().toISOString(),
       };
@@ -83,8 +85,7 @@ app.post(
   }
 );
 
-// Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
