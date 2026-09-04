@@ -1,6 +1,12 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Resolve __dirname when using ES modules ("type": "module" in package.json)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -24,6 +30,7 @@ const upload = multer({
 
 const reportsStore: any[] = [];
 
+// API Route: Get all reports
 app.get('/api/reports', (req: Request, res: Response) => {
   res.status(200).json({
     count: reportsStore.length,
@@ -31,6 +38,7 @@ app.get('/api/reports', (req: Request, res: Response) => {
   });
 });
 
+// API Route: Submit new report
 app.post(
   '/api/reports',
   upload.array('attachments'),
@@ -84,6 +92,14 @@ app.post(
     }
   }
 );
+
+// Serve built Vite frontend static files from the dist folder
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// SPA Fallback: Return index.html for all non-API web routes
+app.get('*', (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
