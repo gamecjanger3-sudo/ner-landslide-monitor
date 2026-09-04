@@ -21,7 +21,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configure Multer in-memory storage (prevents write errors on Render's read-only/ephemeral disk)
+// Configure Multer in-memory storage (prevents write errors on Render's ephemeral disk)
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
@@ -93,15 +93,19 @@ app.post(
   }
 );
 
-// Serve built Vite frontend static files from the dist folder
-app.use(express.static(path.join(__dirname, 'dist')));
+// Serve built Vite static files from the dist folder
+app.use(express.static(path.resolve(__dirname, 'dist')));
 
-// SPA Fallback: Return index.html for all non-API web routes
+// SPA Fallback: Return index.html for non-API web routes
 app.get('*', (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  if (req.path.startsWith('/api')) {
+    res.status(404).json({ error: 'API endpoint not found' });
+    return;
+  }
+  res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const PORT = Number(process.env.PORT) || 5000;
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
