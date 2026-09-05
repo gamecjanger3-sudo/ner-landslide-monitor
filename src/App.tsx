@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Weather from './components/Weather'
 import { LocationAlertModal } from './components/LocationAlertModal'
+import { OnboardingTour } from './components/OnboardingTour' // 1. Added Import
 
 // Pages
 import Dashboard from './pages/Dashboard'
@@ -24,6 +25,9 @@ export function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-slate-50 text-slate-900 relative">
+        {/* 2. Added OnboardingTour component (only triggers after user grants location) */}
+        {isAuthorized && <OnboardingTour />}
+
         {!isAuthorized && <LocationAlertModal onAccessGranted={handleAccessGranted} />}
 
         <div className={`flex min-h-screen ${!isAuthorized ? 'blur-sm pointer-events-none select-none' : ''}`}>
