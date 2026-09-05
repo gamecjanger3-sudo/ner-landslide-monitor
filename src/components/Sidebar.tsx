@@ -54,14 +54,23 @@ function Sidebar() {
     setIsLangOpen(false)
   }
 
+  // Define nav items with matching IDs for driver.js
   const navItems = [
-    { name: t('dashboard'), path: '/dashboard', icon: LayoutDashboard },
-    { name: t('riskMap'), path: '/risk-map', icon: Map },
-    { name: t('weather'), path: '/weather', icon: CloudSun },
-    { name: t('alerts'), path: '/alerts', icon: Bell },
-    { name: t('reports'), path: '/reports', icon: FileText },
-    { name: t('settings'), path: '/settings', icon: Settings },
+    { id: 'nav-dashboard', name: t('dashboard'), path: '/dashboard', icon: LayoutDashboard },
+    { id: 'nav-risk-map', name: t('riskMap'), path: '/risk-map', icon: Map },
+    { id: 'nav-weather', name: t('weather'), path: '/weather', icon: CloudSun },
+    { id: 'nav-alerts', name: t('alerts'), path: '/alerts', icon: Bell },
+    { id: 'nav-reports', name: t('reports'), path: '/reports', icon: FileText },
+    { id: 'nav-settings', name: t('settings'), path: '/settings', icon: Settings },
   ]
+
+  // Helper function to open drawer and launch tour
+  const handleStartHelpTour = () => {
+    setIsOpen(true) // Open sidebar drawer so nav links are visible
+    setTimeout(() => {
+      startTour()
+    }, 200) // Small delay to let the slide-in animation finish
+  }
 
   return (
     <>
@@ -78,7 +87,10 @@ function Sidebar() {
 
       {/* 2. Top Right Control Bar */}
       <div className="fixed top-4 right-4 z-[9990] flex items-start gap-3 pointer-events-auto">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 text-xs font-medium text-slate-700 shadow-md backdrop-blur-sm shrink-0">
+        <div 
+          id="location-detector"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 text-xs font-medium text-slate-700 shadow-md backdrop-blur-sm shrink-0"
+        >
           <span>📍</span>
           <span>
             {t('verifiedLocation')}: 26.4860, 80.3356
@@ -86,14 +98,15 @@ function Sidebar() {
         </div>
 
         <div className="flex flex-col gap-2 items-end relative" ref={langDropdownRef}>
-         <button
-            onClick={startTour}
+          <button
+            onClick={handleStartHelpTour}
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-600 border border-blue-500 text-white text-xs font-medium hover:bg-blue-700 shadow-md transition-all shrink-0 w-36 justify-center"
           >
             <HelpCircle size={15} />
             <span>{t('Help Desk')}</span>
           </button>
-          <div className="relative">
+          
+          <div id="language-selector" className="relative">
             <button
               onClick={() => setIsLangOpen(!isLangOpen)}
               className="flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-md transition-all w-36"
@@ -168,6 +181,7 @@ function Sidebar() {
             const Icon = item.icon
             return (
               <NavLink
+                id={item.id} // Added unique ID for driver.js
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsOpen(false)}

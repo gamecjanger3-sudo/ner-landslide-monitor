@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
-// Reusable function to trigger the tour on demand
 export const startTour = () => {
   const driverObj = driver({
     showProgress: true,
@@ -11,7 +10,7 @@ export const startTour = () => {
         element: '#advisory-bulletin',
         popover: {
           title: 'Landslide Advisories',
-          description: 'Check active regional alerts and high-risk highway zones immediately.',
+          description: 'View immediate high-risk alerts and regional safety warnings.',
           side: 'bottom',
           align: 'start',
         },
@@ -19,17 +18,65 @@ export const startTour = () => {
       {
         element: '#location-detector',
         popover: {
-          title: 'GPS & Location Detection',
-          description: 'Allow location access to get real-time soil and weather updates.',
+          title: 'GPS Location',
+          description: 'Detects your exact coordinates to deliver localized risk warnings.',
           side: 'bottom',
         },
       },
       {
         element: '#language-selector',
         popover: {
-          title: 'Language & Emergency Desk',
-          description: 'Switch between Hindi/English or access emergency helpline numbers.',
+          title: 'Language & Support',
+          description: 'Switch between English/Hindi or trigger this tour anytime.',
           side: 'left',
+        },
+      },
+      {
+        element: '#nav-dashboard',
+        popover: {
+          title: 'Dashboard',
+          description: 'Your primary overview for active regional bulletins and satellite status.',
+          side: 'right',
+        },
+      },
+      {
+        element: '#nav-risk-map',
+        popover: {
+          title: 'Risk Map',
+          description: 'Interactive GIS map highlighting high-risk slope zones in North-East India.',
+          side: 'right',
+        },
+      },
+      {
+        element: '#nav-weather',
+        popover: {
+          title: 'Weather',
+          description: 'Track real-time rainfall and soil saturation levels triggering slide alerts.',
+          side: 'right',
+        },
+      },
+      {
+        element: '#nav-alerts',
+        popover: {
+          title: 'Alerts',
+          description: 'Filter critical safety warnings by severity and specific regions.',
+          side: 'right',
+        },
+      },
+      {
+        element: '#nav-reports',
+        popover: {
+          title: 'Reports',
+          description: 'Submit incident reports or review historical landslide data.',
+          side: 'right',
+        },
+      },
+      {
+        element: '#nav-settings',
+        popover: {
+          title: 'Settings',
+          description: 'Customize notifications, system preferences, and language options.',
+          side: 'right',
         },
       },
     ],
@@ -44,7 +91,6 @@ export const startTour = () => {
 export const OnboardingTour = () => {
   useEffect(() => {
     const hasSeenTour = localStorage.getItem('hasSeenTour');
-    // Auto-start for first-time visitors
     if (!hasSeenTour) {
       startTour();
     }
