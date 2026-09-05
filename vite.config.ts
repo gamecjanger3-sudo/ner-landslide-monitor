@@ -4,12 +4,16 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  preview: {
-    host: true,
-    allowedHosts: ['ner-landslide-monitor-pj1l.onrender.com', '.onrender.com'],
-  },
-  server: {
-    host: true,
-    allowedHosts: ['ner-landslide-monitor-pj1l.onrender.com', '.onrender.com'],
-  },
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      external: [
+        'express',
+        'cors',
+        'dotenv',
+        'multer',
+        '@google-cloud/translate'
+      ]
+    }
+  }
 });
