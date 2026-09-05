@@ -1,3 +1,4 @@
+import { startTour } from './OnboardingTour' // Adjust relative path if inside src/components/
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -85,14 +86,13 @@ function Sidebar() {
         </div>
 
         <div className="flex flex-col gap-2 items-end relative" ref={langDropdownRef}>
-          <button
-            onClick={() => alert('Opening Help Desk support...')}
+         <button
+            onClick={startTour}
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-600 border border-blue-500 text-white text-xs font-medium hover:bg-blue-700 shadow-md transition-all shrink-0 w-36 justify-center"
           >
             <HelpCircle size={15} />
-            <span>{t('helpDesk')}</span>
+            <span>{t('Help Desk')}</span>
           </button>
-
           <div className="relative">
             <button
               onClick={() => setIsLangOpen(!isLangOpen)}
