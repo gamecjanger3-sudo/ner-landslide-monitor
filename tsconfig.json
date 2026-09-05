@@ -15,7 +15,10 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Strictness & Types */
+    /* Include Vite client types for import.meta.env and CSS imports */
+    "types": ["vite/client"],
+
+    /* Strictness */
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
