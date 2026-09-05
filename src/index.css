@@ -1,4 +1,4 @@
-@import "leaflet/dist/leaflet.css"; /* Leaflet or other CSS imports go first */
+@import "leaflet/dist/leaflet.css";
 
 @tailwind base;
 @tailwind components;
