@@ -77,8 +77,10 @@ export const LocationAlertModal: React.FC<Props> = ({ onAccessGranted }) => {
   };
 
   useEffect(() => {
-    // Automatically trigger browser permission prompt on page open
-    requestLocation();
+    const init = async () => {
+      await requestLocation();
+    };
+    init();
   }, []);
 
   const handleAlertAcknowledge = () => {

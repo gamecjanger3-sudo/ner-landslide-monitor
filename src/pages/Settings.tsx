@@ -1,5 +1,5 @@
 import { Bell, Wifi, Languages, Save } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 // Language mapping to match i18next language codes
@@ -25,35 +25,25 @@ const REVERSE_LANGUAGE_CODES: Record<string, string> = {
 function Settings() {
   const { t, i18n } = useTranslation()
 
-  // Sync internal state with active i18next language
-  const [language, setLanguage] = useState(
-    () => REVERSE_LANGUAGE_CODES[i18n.language] || 'English'
-  )
+  // Derive active language string directly during render
+  const selectedLanguage = REVERSE_LANGUAGE_CODES[i18n.language] || 'English'
+
   const [notifications, setNotifications] = useState(true)
   const [criticalAlerts, setCriticalAlerts] = useState(true)
   const [highAlerts, setHighAlerts] = useState(true)
   const [offlineMode, setOfflineMode] = useState(true)
   const [saved, setSaved] = useState(false)
 
-  // Keep dropdown selection updated if global language changes elsewhere (e.g. Sidebar)
-  useEffect(() => {
-    if (REVERSE_LANGUAGE_CODES[i18n.language]) {
-      setLanguage(REVERSE_LANGUAGE_CODES[i18n.language])
-    }
-  }, [i18n.language])
-
   const handleLanguageChange = (selectedLang: string) => {
-    setLanguage(selectedLang)
     const langCode = LANGUAGE_CODES[selectedLang] || 'en'
-    
+
     // Update i18next and persist code to localStorage
     i18n.changeLanguage(langCode)
     localStorage.setItem('appLanguage', langCode)
   }
 
   const handleSave = () => {
-    // Explicitly make sure current language selection is written to localStorage
-    const langCode = LANGUAGE_CODES[language] || 'en'
+    const langCode = LANGUAGE_CODES[selectedLanguage] || 'en'
     localStorage.setItem('appLanguage', langCode)
 
     setSaved(true)
@@ -98,7 +88,7 @@ function Settings() {
         </div>
 
         <select
-          value={language}
+          value={selectedLanguage}
           onChange={(event) => handleLanguageChange(event.target.value)}
           className="w-full md:w-96 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400"
         >

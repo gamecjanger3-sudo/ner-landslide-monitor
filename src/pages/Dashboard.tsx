@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
@@ -31,12 +31,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch weather data for Shillong (default high-risk zone) on load
-  useEffect(() => {
-    handleFetchWeather("Shillong");
-  }, []);
+  
 
-  const handleFetchWeather = async (cityName: string) => {
+  const handleFetchWeather = useCallback(async (cityName: string) => {
     if (!cityName.trim()) return;
     setLoading(true);
     setError(null);
@@ -44,13 +41,30 @@ export default function Dashboard() {
     try {
       const data = await fetchWeatherByCity(cityName);
       setWeather(data);
-    } catch (err) {
+    } catch {
       setError("Failed to load weather data.");
       setWeather(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty array because setStates are stable
+  
+  // ✅ Fixed version:
+  useEffect(() => {
+    let isMounted = true;
+
+    const initWeather = async () => {
+      if (isMounted) {
+        await handleFetchWeather("Shillong");
+      }
+    };
+
+    initWeather();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [handleFetchWeather]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
