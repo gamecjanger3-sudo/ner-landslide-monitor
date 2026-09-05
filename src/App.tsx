@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Weather from './components/Weather'
 import { LocationAlertModal } from './components/LocationAlertModal'
-import { OnboardingTour } from './components/OnboardingTour' // 1. Added Import
+import { useTranslation } from 'react-i18next'
+import { OnboardingTour } from './components/OnboardingTour'
 
 // Pages
 import Dashboard from './pages/Dashboard'
@@ -14,6 +15,7 @@ import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
 
 export function App() {
+  const { i18n } = useTranslation() // Get current active language state
   const [isAuthorized, setIsAuthorized] = useState<boolean>(false)
   const [, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
 
@@ -25,8 +27,8 @@ export function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-slate-50 text-slate-900 relative">
-        {/* 2. Added OnboardingTour component (only triggers after user grants location) */}
-        {isAuthorized && <OnboardingTour />}
+        {/* Pass active language prop into OnboardingTour */}
+        {isAuthorized && <OnboardingTour currentLang={i18n.language} />}
 
         {!isAuthorized && <LocationAlertModal onAccessGranted={handleAccessGranted} />}
 

@@ -65,11 +65,12 @@ function Sidebar() {
   ]
 
   // Helper function to open drawer and launch tour
+
   const handleStartHelpTour = () => {
-    setIsOpen(true) // Open sidebar drawer so nav links are visible
+    setIsOpen(true) // Open sidebar drawer
     setTimeout(() => {
-      startTour()
-    }, 200) // Small delay to let the slide-in animation finish
+      startTour(i18n.language) // Pass current language code ('hi' or 'en')
+    }, 200)
   }
 
   return (
