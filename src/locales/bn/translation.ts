@@ -12,11 +12,11 @@ const bn = {
 
   // Dashboard
   dashboardSubtitle: 'উত্তর-পূর্ব অঞ্চলে ভূমিধসের ঝুঁকির রিয়েল-টাইম তথ্য।',
-  criticalRisk: 'গুরুতর ঝুঁকি',
+  CriticalRisk: 'গুরুতর ঝুঁকি',
   highRisk: 'উচ্চ ঝুঁকি',
   moderateRisk: 'মাঝারি ঝুঁকি',
   lowRisk: 'কম ঝুঁকি',
-  immediateAttention: 'তাৎক্ষণিক মনোযোগ প্রয়োজন',
+  ImmediateAttention: 'তাৎক্ষণিক মনোযোগ প্রয়োজন',
   requiresCloseMonitoring: 'ঘনিষ্ঠ পর্যবেক্ষণ প্রয়োজন',
   continueMonitoring: 'পর্যবেক্ষণ চালিয়ে যান',
   currentlyStable: 'বর্তমানে স্থিতিশীল',

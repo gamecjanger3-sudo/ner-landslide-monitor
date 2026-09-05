@@ -13,8 +13,8 @@ export default function Weather() {
     <div className="p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">{t('weatherMonitoring')}</h1>
-        <p className="text-slate-500 mt-1">{t('weatherSubtitle')}</p>
+        <h1 className="text-3xl font-bold text-slate-900">{t('Weather Monitoring')}</h1>
+        <p className="text-slate-500 mt-1">{t('Weather Subtitle')}</p>
       </div>
 
       {/* Search & Quick Action Bar */}
@@ -25,20 +25,20 @@ export default function Weather() {
               type="text"
               value={searchCity}
               onChange={(e) => setSearchCity(e.target.value)}
-              placeholder={t('searchPlaceholder')}
+              placeholder={t('Search Placeholder')}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Search className="absolute left-3.5 top-3 text-slate-400" size={18} />
           </div>
           <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-md">
             <Search size={16} />
-            <span>{t('searchBtn')}</span>
+            <span>{t('Search Btn')}</span>
           </button>
         </div>
 
         {/* Quick Monitoring Chips */}
         <div className="flex items-center gap-2 text-xs pt-2 border-t border-slate-100 overflow-x-auto">
-          <span className="text-slate-400 font-medium shrink-0">{t('quickMonitoring')}</span>
+          <span className="text-slate-400 font-medium shrink-0">{t('Quick Monitoring')}</span>
           {cities.map((city) => (
             <button
               key={city}
@@ -61,16 +61,16 @@ export default function Weather() {
         <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between min-h-[220px]">
           <div className="flex justify-between items-start">
             <span className="text-xs uppercase tracking-wider font-semibold opacity-80">
-              {t('currentConditions')}
+              {t('Current Conditions')}
             </span>
             <span className="text-[10px] px-2.5 py-1 bg-white/20 backdrop-blur-md rounded-full font-medium">
-              {t('liveApi')}
+              {t('Live Api')}
             </span>
           </div>
 
           <div>
             <h2 className="text-3xl font-bold">{selectedCity}</h2>
-            <p className="text-sm opacity-90 mt-0.5">{t('moderateRain')}</p>
+            <p className="text-sm opacity-90 mt-0.5">{t('Moderate Rain')}</p>
           </div>
 
           <div className="text-5xl font-black tracking-tight">18°C</div>
@@ -84,7 +84,7 @@ export default function Weather() {
               <Droplets size={24} />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">{t('humidity')}</p>
+              <p className="text-xs text-slate-400 font-medium">{t('Humidity')}</p>
               <p className="text-2xl font-bold text-slate-800">88%</p>
             </div>
           </div>
@@ -95,8 +95,8 @@ export default function Weather() {
               <CloudRain size={24} />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">{t('condition')}</p>
-              <p className="text-2xl font-bold text-slate-800">{t('rain')}</p>
+              <p className="text-xs text-slate-400 font-medium">{t('Condition')}</p>
+              <p className="text-2xl font-bold text-slate-800">{t('Rain')}</p>
             </div>
           </div>
 
@@ -106,7 +106,7 @@ export default function Weather() {
               <Thermometer size={24} />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">{t('thermalReadout')}</p>
+              <p className="text-xs text-slate-400 font-medium">{t('Thermal Readout')}</p>
               <p className="text-2xl font-bold text-slate-800">18°C</p>
             </div>
           </div>
@@ -117,8 +117,8 @@ export default function Weather() {
               <Activity size={24} />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">{t('stationData')}</p>
-              <p className="text-2xl font-bold text-slate-800">{t('active')}</p>
+              <p className="text-xs text-slate-400 font-medium">{t('Station Data')}</p>
+              <p className="text-2xl font-bold text-slate-800">{t('Active')}</p>
             </div>
           </div>
         </div>

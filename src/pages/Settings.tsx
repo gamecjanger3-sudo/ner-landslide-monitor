@@ -67,7 +67,7 @@ function Settings() {
       {/* Heading */}
       <div>
         <h1 className="text-3xl font-bold text-slate-900">
-          {t('settingsTitle')}
+          {t('Settings Title')}
         </h1>
         <p className="mt-1 text-slate-500">
           {t('settingsSubtitle')}
@@ -121,10 +121,10 @@ function Settings() {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              {t('notifications')}
+              {t('Notifications')}
             </h2>
             <p className="text-sm text-slate-500">
-              {t('controlAlerts')}
+              {t('Control Alerts')}
             </p>
           </div>
         </div>
@@ -133,10 +133,10 @@ function Settings() {
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div>
             <p className="font-medium text-slate-800">
-              {t('enableNotifications')}
+              {t('Enable Notifications')}
             </p>
             <p className="text-sm text-slate-500">
-              {t('receiveWarnings')}
+              {t('Receive Warnings')}
             </p>
           </div>
           <input
@@ -151,10 +151,10 @@ function Settings() {
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div>
             <p className="font-medium text-slate-800">
-              {t('criticalAlerts')}
+              {t('Critical Alerts')}
             </p>
             <p className="text-sm text-slate-500">
-              {t('receiveImmediateWarnings')}
+              {t('Receive Immediate Warnings')}
             </p>
           </div>
           <input
@@ -170,10 +170,10 @@ function Settings() {
         <div className="flex items-center justify-between py-4">
           <div>
             <p className="font-medium text-slate-800">
-              {t('highRiskAlerts')}
+              {t('High Risk Alerts')}
             </p>
             <p className="text-sm text-slate-500">
-              {t('receiveHighRiskWarnings')}
+              {t('Receive High Risk Warnings')}
             </p>
           </div>
           <input
@@ -194,10 +194,10 @@ function Settings() {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              {t('offlineMode')}
+              {t('Offline Mode')}
             </h2>
             <p className="text-sm text-slate-500">
-              {t('usefulRemoteAreas')}
+              {t('Useful Remote Areas')}
             </p>
           </div>
         </div>
@@ -205,7 +205,7 @@ function Settings() {
         <div className="flex items-center justify-between">
           <div>
             <p className="font-medium text-slate-800">
-              {t('enableOfflineSync')}
+              {t('Enable Offline Sync')}
             </p>
             <p className="text-sm text-slate-500">
               Store reports locally and synchronize when the network returns.
