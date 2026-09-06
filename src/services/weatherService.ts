@@ -14,6 +14,12 @@ export interface WeatherData {
   weather: WeatherItem[];
 }
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL &&
+  !import.meta.env.VITE_API_BASE_URL.includes('your-new-render-app')
+    ? import.meta.env.VITE_API_BASE_URL
+    : 'https://ner-landslide-monitor-pj1l.onrender.com';
+
 export const fetchWeatherByCity = async (
   city: string
 ): Promise<WeatherData> => {
@@ -24,7 +30,7 @@ export const fetchWeatherByCity = async (
   }
 
   const response = await fetch(
-    `/api/weather?city=${encodeURIComponent(trimmedCity)}`
+    `${API_BASE_URL}/api/weather?city=${encodeURIComponent(trimmedCity)}`
   );
 
   const data = await response.json();
