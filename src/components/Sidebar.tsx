@@ -92,7 +92,7 @@ function Sidebar() {
         <div className="flex flex-col gap-2 items-end relative" ref={langDropdownRef}>
           <button
             onClick={handleStartHelpTour}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-600 border border-blue-500 text-white text-xs font-medium hover:bg-blue-700 shadow-md transition-all shrink-0 w-36 justify-center"
+            className="flex items-center gap-2 px-3 h-10 rounded-xl bg-blue-600 border border-blue-500 text-white text-xs font-medium hover:bg-blue-700 shadow-md transition-all shrink-0 w-36 justify-center whitespace-nowrap"
           >
             <HelpCircle size={15} />
             <span>{t('Help Desk')}</span>
@@ -101,7 +101,7 @@ function Sidebar() {
           <div id="language-selector" className="relative">
             <button
               onClick={() => setIsLangOpen(!isLangOpen)}
-              className="flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-md transition-all w-36"
+              className="flex items-center justify-between gap-1.5 px-3 h-10 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-md transition-all w-36 whitespace-nowrap"
             >
               <div className="flex items-center gap-1.5 truncate">
                 <Globe size={14} className="text-blue-600 shrink-0" />

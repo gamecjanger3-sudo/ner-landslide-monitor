@@ -14,94 +14,95 @@ export interface WeatherData {
   weather: WeatherItem[];
 }
 
-// Fallback mock data for North-East cities when API key is missing or fails
-const mockWeatherData: Record<string, WeatherData> = {
-  shillong: {
-    name: 'Shillong',
-    main: { temp: 18, humidity: 88 },
-    weather: [{ id: 500, main: 'Rain', description: 'moderate rain', icon: '10d' }],
-  },
-  aizawl: {
-    name: 'Aizawl',
-    main: { temp: 22, humidity: 82 },
-    weather: [{ id: 501, main: 'Rain', description: 'heavy intensity rain', icon: '10d' }],
-  },
-  gangtok: {
-    name: 'Gangtok',
-    main: { temp: 15, humidity: 90 },
-    weather: [{ id: 701, main: 'Clouds', description: 'overcast clouds', icon: '04d' }],
-  },
-  guwahati: {
-    name: 'Guwahati',
-    main: { temp: 28, humidity: 75 },
-    weather: [{ id: 800, main: 'Clear', description: 'clear sky', icon: '01d' }],
-  },
-  imphal: {
-    name: 'Imphal',
-    main: { temp: 24, humidity: 79 },
-    weather: [{ id: 801, main: 'Clouds', description: 'few clouds', icon: '02d' }],
-  },
-  kohima: {
-    name: 'Kohima',
-    main: { temp: 19, humidity: 85 },
-    weather: [{ id: 500, main: 'Rain', description: 'light rain', icon: '10d' }],
-  },
+const getApiKey = (): string => {
+  return import.meta.env.VITE_WEATHER_API_KEY || "";
 };
 
-export const fetchWeatherByCity = async (city: string): Promise<WeatherData> => {
-  const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || '';
+export const fetchWeatherByCity = async (
+  city: string
+): Promise<WeatherData> => {
+  const API_KEY = getApiKey();
 
-  // 1. Try fetching from OpenWeather API if API key exists
-  if (API_KEY) {
+  if (!API_KEY) {
+    throw new Error(
+      "Weather API key is missing. Check VITE_WEATHER_API_KEY in .env"
+    );
+  }
+
+  const response = await fetch(
+    `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
+      city.trim()
+    )}&units=metric&appid=${API_KEY}`
+  );
+
+  if (!response.ok) {
+    let message = `Weather API request failed (${response.status})`;
+
     try {
-      const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
-          city
-        )}&units=metric&appid=${API_KEY}`
-      );
+      const errorData = await response.json();
 
-      if (response.ok) {
-        return await response.json();
+      if (errorData?.message) {
+        message += `: ${errorData.message}`;
       }
-    } catch (error) {
-      console.warn('API fetch failed, switching to mock data fallback.', error);
+    } catch {
+      // Keep the original error message.
     }
+
+    throw new Error(message);
   }
 
-  // 2. Fallback to local mock data if API key is missing or request fails
-  const normalizedCity = city.toLowerCase().trim();
-  if (mockWeatherData[normalizedCity]) {
-    return mockWeatherData[normalizedCity];
-  }
+  const data = await response.json();
 
-  // Generic fallback if user searches a city outside the pre-configured mock list
   return {
-    name: city.charAt(0).toUpperCase() + city.slice(1),
-    main: { temp: 21, humidity: 80 },
-    weather: [{ id: 800, main: 'Clouds', description: 'scattered clouds', icon: '03d' }],
+    name: data.name,
+    main: {
+      temp: data.main.temp,
+      humidity: data.main.humidity,
+    },
+    weather: data.weather,
   };
 };
 
-export const fetchWeatherByCoords = async (lat: number, lon: number): Promise<WeatherData> => {
-  const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || '';
+export const fetchWeatherByCoords = async (
+  lat: number,
+  lon: number
+): Promise<WeatherData> => {
+  const API_KEY = getApiKey();
 
-  if (API_KEY) {
-    try {
-      const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
-      );
-      if (response.ok) {
-        return await response.json();
-      }
-    } catch (err) {
-      console.warn('Coordinate weather fetch failed, returning fallback.', err);
-    }
+  if (!API_KEY) {
+    throw new Error(
+      "Weather API key is missing. Check VITE_WEATHER_API_KEY in .env"
+    );
   }
 
-  // Fallback if key missing or failed
+  const response = await fetch(
+    `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
+  );
+
+  if (!response.ok) {
+    let message = `Weather API request failed (${response.status})`;
+
+    try {
+      const errorData = await response.json();
+
+      if (errorData?.message) {
+        message += `: ${errorData.message}`;
+      }
+    } catch {
+      // Keep the original error message.
+    }
+
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+
   return {
-    name: 'Your Current Region',
-    main: { temp: 20, humidity: 85 },
-    weather: [{ id: 500, main: 'Rain', description: 'light rain', icon: '10d' }],
+    name: data.name,
+    main: {
+      temp: data.main.temp,
+      humidity: data.main.humidity,
+    },
+    weather: data.weather,
   };
 };
