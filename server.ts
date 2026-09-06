@@ -15,41 +15,25 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// 1. Configure CORS
-const allowedOrigins = [
-  'https://ner-landslide-monitor-pqlbgcjc5-gamecjanger3-9086.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000',
-];
+// Required on Render so secure cross-site cookies pass correctly through reverse proxies
+app.set('trust proxy', 1);
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (Postman, curl, server-to-server)
-      if (!origin) return callback(null, true);
-
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.endsWith('.vercel.app') ||
-        origin.includes('localhost')
-      ) {
-        return callback(null, true);
-      }
-
-      return callback(null, false);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
-
+// 1. Unified CORS Configuration
 const allowedCorsMiddleware = cors({
-  origin: [
-    'https://ner-landslide-monitor-3b11lgd2f-gamechanger3-9086.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000',
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (Postman, mobile apps, server-to-server)
+    if (!origin) return callback(null, true);
+
+    if (
+      origin.endsWith('.vercel.app') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -57,7 +41,7 @@ const allowedCorsMiddleware = cors({
 
 app.use(allowedCorsMiddleware);
 
-// Express 5 Fix: Use named parameter '{*path}' instead of raw '*'
+// Express 5 Fix: Pre-flight wildcard route handling
 app.options('/{*path}', allowedCorsMiddleware);
 
 // 2. Security Headers & Body Parsers
@@ -164,11 +148,12 @@ app.post(
   },
 );
 
-// Express 5 Fix: Use '{*path}' syntax for catch-all API and static routes
+// Express 5 Fix: Fallback for unmatched API routes
 app.use('/api/{*path}', (req: Request, res: Response) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
+// Static assets & SPA fallback
 app.use(express.static(path.resolve(__dirname, 'dist')));
 
 app.get('/{*path}', (req: Request, res: Response) => {

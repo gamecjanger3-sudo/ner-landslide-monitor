@@ -17,8 +17,8 @@ const loginLimiter = rateLimit({
 function setAuthCookie(res: Response, token: string) {
   res.cookie("token", token, {
     httpOnly: true,
-    secure: true, // Essential for cross-site cookies over HTTPS
-    sameSite: "none", // Essential when Vercel and Render are on different domains
+    secure: true, // Must be true for HTTPS
+    sameSite: "none", // Must be 'none' for cross-domain Vercel <-> Render
     maxAge: 24 * 60 * 60 * 1000,
   });
 }
