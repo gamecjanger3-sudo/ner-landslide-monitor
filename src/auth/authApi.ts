@@ -17,26 +17,33 @@ export interface SignupData {
   password: string;
 }
 
-// 1. Define the base URL dynamically using environment variables or your Render URL
-// Define the base URL using Vite environment variables or fallback to your Render URL
-const API_BASE_URL = 
-  import.meta.env.VITE_API_URL || 
+// Clean up trailing slashes from API_BASE_URL to avoid double slashes in fetch routes
+const RAW_API_URL =
+  import.meta.env.VITE_API_URL ||
   "https://ner-landslide-monitor-pj1l.onrender.com";
+
+const API_BASE_URL = RAW_API_URL.replace(/\/+$/, "");
 
 async function parseResponse(response: Response) {
   const contentType = response.headers.get("content-type");
 
   // Check if response is HTML instead of JSON (prevents JSON parse crashes)
   if (!contentType || !contentType.includes("application/json")) {
-    throw new Error("Unable to connect to backend server. Please verify backend status on Render.");
+    throw new Error(
+      "Unable to connect to backend server. Please verify backend status on Render."
+    );
   }
 
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(
-      data.detail || "Something went wrong. Please try again.",
-    );
+    // Check both Express ('error' / 'message') and FastAPI ('detail') formats
+    const errorMessage =
+      data.error ||
+      data.message ||
+      data.detail ||
+      "Something went wrong. Please try again.";
+    throw new Error(errorMessage);
   }
 
   return data;
@@ -54,7 +61,8 @@ export async function login(data: LoginData): Promise<AuthUser> {
 
   const result = await parseResponse(response);
 
-  return result.user;
+  // Return user object whether returned as { user: ... } or root object
+  return result.user || result;
 }
 
 export async function signup(data: SignupData): Promise<AuthUser> {
@@ -69,7 +77,7 @@ export async function signup(data: SignupData): Promise<AuthUser> {
 
   const result = await parseResponse(response);
 
-  return result.user;
+  return result.user || result;
 }
 
 export async function getMe(): Promise<AuthUser> {
@@ -78,7 +86,9 @@ export async function getMe(): Promise<AuthUser> {
     credentials: "include",
   });
 
-  return parseResponse(response);
+  const result = await parseResponse(response);
+
+  return result.user || result;
 }
 
 export async function logout(): Promise<void> {
@@ -91,7 +101,7 @@ export async function logout(): Promise<void> {
     const data = await response.json().catch(() => ({}));
 
     throw new Error(
-      data.detail || "Logout failed. Please try again.",
+      data.error || data.message || data.detail || "Logout failed. Please try again."
     );
   }
 }
