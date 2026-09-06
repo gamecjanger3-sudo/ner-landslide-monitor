@@ -4,6 +4,17 @@ import { signup, login, getUserFromToken } from "./authService.js";
 
 const router = Router();
 
+// Define consistent cookie configuration for cross-domain (Vercel <-> Render)
+const COOKIE_NAME = "ner_access_token";
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: true,      // REQUIRED for cross-domain HTTPS
+  sameSite: "none" as const, // REQUIRED for Vercel -> Render requests
+  path: "/",        // Ensures cookie is sent on all endpoints
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours
+};
+
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -15,12 +26,7 @@ const loginLimiter = rateLimit({
 });
 
 function setAuthCookie(res: Response, token: string) {
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: true, // Must be true for HTTPS
-    sameSite: "none", // Must be 'none' for cross-domain Vercel <-> Render
-    maxAge: 24 * 60 * 60 * 1000,
-  });
+  res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 }
 
 router.post("/signup", async (req: Request, res: Response) => {
@@ -75,7 +81,7 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
 
     setAuthCookie(res, result.access_token);
 
-    return res.json({
+    return res.status(200).json({
       user: result.user,
     });
   } catch (error) {
@@ -87,7 +93,7 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
 
 router.get("/me", async (req: Request, res: Response) => {
   try {
-    const token = req.cookies?.ner_access_token;
+    const token = req.cookies?.[COOKIE_NAME];
 
     if (!token) {
       return res.status(401).json({
@@ -97,7 +103,9 @@ router.get("/me", async (req: Request, res: Response) => {
 
     const user = await getUserFromToken(token);
 
-    return res.json(user);
+    return res.status(200).json({
+      user: user,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Authentication failed.";
@@ -105,15 +113,16 @@ router.get("/me", async (req: Request, res: Response) => {
     return res.status(401).json({ detail: message });
   }
 });
+
 router.post("/logout", (_req: Request, res: Response) => {
-  res.clearCookie("ner_access_token", {
+  res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: true,
+    sameSite: "none",
     path: "/",
   });
 
-  return res.json({ message: "Logged out successfully." });
+  return res.status(200).json({ message: "Logged out successfully." });
 });
 
 export default router;
