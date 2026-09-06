@@ -14,44 +14,26 @@ export interface WeatherData {
   weather: WeatherItem[];
 }
 
-const getApiKey = (): string => {
-  return import.meta.env.VITE_WEATHER_API_KEY || "";
-};
-
 export const fetchWeatherByCity = async (
   city: string
 ): Promise<WeatherData> => {
-  const API_KEY = getApiKey();
+  const trimmedCity = city.trim();
 
-  if (!API_KEY) {
-    throw new Error(
-      "Weather API key is missing. Check VITE_WEATHER_API_KEY in .env"
-    );
+  if (!trimmedCity) {
+    throw new Error('City name is required.');
   }
 
   const response = await fetch(
-    `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
-      city.trim()
-    )}&units=metric&appid=${API_KEY}`
+    `/api/weather?city=${encodeURIComponent(trimmedCity)}`
   );
 
-  if (!response.ok) {
-    let message = `Weather API request failed (${response.status})`;
-
-    try {
-      const errorData = await response.json();
-
-      if (errorData?.message) {
-        message += `: ${errorData.message}`;
-      }
-    } catch {
-      // Keep the original error message.
-    }
-
-    throw new Error(message);
-  }
-
   const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error || `Weather API request failed (${response.status})`
+    );
+  }
 
   return {
     name: data.name,
@@ -67,42 +49,13 @@ export const fetchWeatherByCoords = async (
   lat: number,
   lon: number
 ): Promise<WeatherData> => {
-  const API_KEY = getApiKey();
-
-  if (!API_KEY) {
-    throw new Error(
-      "Weather API key is missing. Check VITE_WEATHER_API_KEY in .env"
-    );
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    throw new Error('Valid latitude and longitude are required.');
   }
 
-  const response = await fetch(
-    `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
+  // Coordinate-based weather is not currently exposed
+  // through the backend weather proxy.
+  throw new Error(
+    'Coordinate weather fetching is not configured yet.'
   );
-
-  if (!response.ok) {
-    let message = `Weather API request failed (${response.status})`;
-
-    try {
-      const errorData = await response.json();
-
-      if (errorData?.message) {
-        message += `: ${errorData.message}`;
-      }
-    } catch {
-      // Keep the original error message.
-    }
-
-    throw new Error(message);
-  }
-
-  const data = await response.json();
-
-  return {
-    name: data.name,
-    main: {
-      temp: data.main.temp,
-      humidity: data.main.humidity,
-    },
-    weather: data.weather,
-  };
 };

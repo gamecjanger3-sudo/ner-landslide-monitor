@@ -50,31 +50,95 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 3. Root & Health Check Routes
 app.get('/', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'ok', message: 'Backend server is active' });
+  res.status(200).json({
+    status: 'ok',
+    message: 'Backend server is active',
+  });
 });
 
 app.get('/api/health', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// 4. API Routes
+// 4. Authentication API Routes
 app.use('/api/auth', authRouter);
 
-// Configure Multer in-memory storage
+// 5. Weather API Proxy
+// Browser -> Express backend -> OpenWeather
+app.get('/api/weather', async (req: Request, res: Response) => {
+  try {
+    const city = String(req.query.city || '').trim();
+
+    if (!city) {
+      res.status(400).json({
+        error: 'City is required',
+      });
+      return;
+    }
+
+    // Prefer the secure server-side variable.
+    // VITE_WEATHER_API_KEY is kept as a fallback for the current setup.
+    const API_KEY =
+      process.env.OPENWEATHER_API_KEY ||
+      process.env.VITE_WEATHER_API_KEY;
+
+    if (!API_KEY) {
+      res.status(500).json({
+        error: 'Weather API key is not configured on server',
+      });
+      return;
+    }
+
+    const weatherUrl =
+      `https://api.openweathermap.org/data/2.5/weather` +
+      `?q=${encodeURIComponent(city)}` +
+      `&units=metric` +
+      `&appid=${API_KEY}`;
+
+    const response = await fetch(weatherUrl);
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      res.status(response.status).json({
+        error: data?.message || 'Weather API request failed',
+      });
+      return;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Weather API error:', error);
+
+    res.status(500).json({
+      error: 'Failed to fetch weather data',
+    });
+  }
+});
+
+// 6. Configure Multer in-memory storage
 const storage = multer.memoryStorage();
+
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: {
+    fileSize: 50 * 1024 * 1024,
+  },
 });
 
 const reportsStore: any[] = [];
 
+// 7. Reports API
 app.get('/api/reports', (req: Request, res: Response) => {
   res.status(200).json({
     count: reportsStore.length,
@@ -107,7 +171,9 @@ app.post(
         return;
       }
 
-      const uploadedFiles = req.files as Express.Multer.File[] | undefined;
+      const uploadedFiles = req.files as
+        | Express.Multer.File[]
+        | undefined;
 
       const newReport = {
         id: `report_${Date.now()}`,
@@ -141,36 +207,46 @@ app.post(
       });
     } catch (error: any) {
       console.error('Error handling report submission:', error);
+
       res.status(500).json({
         error: error.message || 'Internal Server Error',
       });
     }
-  },
+  }
 );
 
-// Express 5 Fix: Fallback for unmatched API routes
+// 8. Express 5 Fix: Fallback for unmatched API routes
 app.use('/api/{*path}', (req: Request, res: Response) => {
-  res.status(404).json({ error: 'API endpoint not found' });
+  res.status(404).json({
+    error: 'API endpoint not found',
+  });
 });
 
-// Static assets & SPA fallback
+// 9. Static assets & SPA fallback
 app.use(express.static(path.resolve(__dirname, 'dist')));
 
 app.get('/{*path}', (req: Request, res: Response) => {
   const indexPath = path.resolve(__dirname, 'dist', 'index.html');
+
   res.sendFile(indexPath, (err) => {
     if (err) {
-      res.status(200).json({ status: 'ok', message: 'API Server is running.' });
+      res.status(200).json({
+        status: 'ok',
+        message: 'API Server is running.',
+      });
     }
   });
 });
 
+// 10. Start Server
 const PORT = Number(process.env.PORT) || 5000;
 
 console.log('Connecting to PostgreSQL database...');
+
 initializePostgres()
   .then(() => {
     console.log('PostgreSQL initialized successfully.');
+
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
     });
