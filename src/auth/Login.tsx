@@ -24,6 +24,7 @@ export default function Login({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,6 +41,7 @@ export default function Login({
     }
 
     try {
+      setIsLoading(true);
       await login({
         email,
         password,
@@ -52,6 +54,8 @@ export default function Login({
           ? error.message
           : "Login failed. Please try again.",
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -119,6 +123,7 @@ export default function Login({
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   autoComplete="email"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -136,6 +141,7 @@ export default function Login({
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete="current-password"
+                  disabled={isLoading}
                 />
 
                 <button
@@ -145,6 +151,7 @@ export default function Login({
                   aria-label={
                     showPassword ? "Hide password" : "Show password"
                   }
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -153,8 +160,8 @@ export default function Login({
 
             {error && <div className="auth-error">{error}</div>}
 
-            <button type="submit" className="auth-submit">
-              Sign in
+            <button type="submit" className="auth-submit" disabled={isLoading}>
+              {isLoading ? "Signing in..." : "Sign in"}
               <ArrowRight size={18} />
             </button>
           </form>
@@ -165,7 +172,7 @@ export default function Login({
 
           <p className="switch-auth">
             Don't have an account?{" "}
-            <button type="button" onClick={onSwitchToSignup}>
+            <button type="button" onClick={onSwitchToSignup} disabled={isLoading}>
               Create account
             </button>
           </p>
