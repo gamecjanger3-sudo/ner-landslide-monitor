@@ -92,10 +92,7 @@ function Sidebar() {
           id="location-detector"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 text-xs font-medium text-slate-700 shadow-md backdrop-blur-sm shrink-0"
         >
-          <span>📍</span>
-          <span>
-            {t('verifiedLocation')}: 26.4860, 80.3356
-          </span>
+          
         </div>
 
         <div className="flex flex-col gap-2 items-end relative" ref={langDropdownRef}>
