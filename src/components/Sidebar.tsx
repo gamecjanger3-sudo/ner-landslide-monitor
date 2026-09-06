@@ -88,12 +88,6 @@ function Sidebar() {
 
       {/* 2. Top Right Control Bar */}
       <div className="fixed top-4 right-4 z-[9990] flex items-start gap-3 pointer-events-auto">
-        <div 
-          id="location-detector"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 text-xs font-medium text-slate-700 shadow-md backdrop-blur-sm shrink-0"
-        >
-          
-        </div>
 
         <div className="flex flex-col gap-2 items-end relative" ref={langDropdownRef}>
           <button
