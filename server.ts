@@ -45,13 +45,11 @@ app.use(
 );
 
 const allowedCorsMiddleware = cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (origin.includes('vercel.app') || origin.includes('localhost')) {
-      return callback(null, true);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: [
+    'https://ner-landslide-monitor-3b11lgd2f-gamechanger3-9086.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
