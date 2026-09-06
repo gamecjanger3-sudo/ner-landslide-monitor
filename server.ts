@@ -30,9 +30,11 @@ const allowedCorsMiddleware = cors({
 });
 
 app.use(allowedCorsMiddleware);
-app.options('*', allowedCorsMiddleware);
 
-// 2. Body Parsers & Security Headers
+// Express 5 Fix: Use named parameter '{*path}' instead of raw '*'
+app.options('/{*path}', allowedCorsMiddleware);
+
+// 2. Security Headers & Body Parsers
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -42,7 +44,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 3. Root & Health Check Routes (DECLARED BEFORE STATIC FILES)
+// 3. Root & Health Check Routes
 app.get('/', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', message: 'Backend server is active' });
 });
@@ -136,9 +138,20 @@ app.post(
   },
 );
 
-// 5. Catch-all for non-existing API routes
-app.use('/api/*', (req: Request, res: Response) => {
+// Express 5 Fix: Use '{*path}' syntax for catch-all API and static routes
+app.use('/api/{*path}', (req: Request, res: Response) => {
   res.status(404).json({ error: 'API endpoint not found' });
+});
+
+app.use(express.static(path.resolve(__dirname, 'dist')));
+
+app.get('/{*path}', (req: Request, res: Response) => {
+  const indexPath = path.resolve(__dirname, 'dist', 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      res.status(200).json({ status: 'ok', message: 'API Server is running.' });
+    }
+  });
 });
 
 const PORT = Number(process.env.PORT) || 5000;
