@@ -10,23 +10,18 @@ import { fileURLToPath } from 'url';
 import authRouter from './server/authRoutes.js';
 import { initializePostgres } from './server/postgresDb.js';
 
-// Resolve __dirname when using ES modules ("type": "module" in package.json)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Configure CORS before routes and middleware
+// 1. Configure CORS
 const allowedCorsMiddleware = cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g., mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
-
-    // Dynamically allow Vercel previews/deployments and local dev environment
     if (origin.includes('vercel.app') || origin.includes('localhost')) {
       return callback(null, true);
     }
-
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -35,22 +30,19 @@ const allowedCorsMiddleware = cors({
 });
 
 app.use(allowedCorsMiddleware);
-
-// Handle CORS preflight explicitly across all endpoints
 app.options('*', allowedCorsMiddleware);
 
-// Configure Helmet for cross-origin assets
+// 2. Body Parsers & Security Headers
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
-
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoints for Render root/health
+// 3. Root & Health Check Routes (DECLARED BEFORE STATIC FILES)
 app.get('/', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', message: 'Backend server is active' });
 });
@@ -59,12 +51,11 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// Authentication API
+// 4. API Routes
 app.use('/api/auth', authRouter);
 
 // Configure Multer in-memory storage
 const storage = multer.memoryStorage();
-
 const upload = multer({
   storage,
   limits: { fileSize: 50 * 1024 * 1024 },
@@ -72,7 +63,6 @@ const upload = multer({
 
 const reportsStore: any[] = [];
 
-// API Route: Get all reports
 app.get('/api/reports', (req: Request, res: Response) => {
   res.status(200).json({
     count: reportsStore.length,
@@ -80,7 +70,6 @@ app.get('/api/reports', (req: Request, res: Response) => {
   });
 });
 
-// API Route: Submit new report
 app.post(
   '/api/reports',
   upload.array('attachments'),
@@ -140,7 +129,6 @@ app.post(
       });
     } catch (error: any) {
       console.error('Error handling report submission:', error);
-
       res.status(500).json({
         error: error.message || 'Internal Server Error',
       });
@@ -148,29 +136,13 @@ app.post(
   },
 );
 
-// Serve static build if dist folder exists
-app.use(express.static(path.resolve(__dirname, 'dist')));
-
-// Fallback route for SPA / unhandled routes
-app.get('*', (req: Request, res: Response) => {
-  if (req.path.startsWith('/api')) {
-    res.status(404).json({
-      error: 'API endpoint not found',
-    });
-    return;
-  }
-
-  const indexPath = path.resolve(__dirname, 'dist', 'index.html');
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      res.status(200).json({ status: 'ok', message: 'API Server is running.' });
-    }
-  });
+// 5. Catch-all for non-existing API routes
+app.use('/api/*', (req: Request, res: Response) => {
+  res.status(404).json({ error: 'API endpoint not found' });
 });
 
 const PORT = Number(process.env.PORT) || 5000;
 
-// Initialize PostgreSQL before starting the server
 console.log('Connecting to PostgreSQL database...');
 initializePostgres()
   .then(() => {
@@ -180,9 +152,6 @@ initializePostgres()
     });
   })
   .catch((error) => {
-    console.error(
-      'Failed to initialize PostgreSQL:',
-      error,
-    );
+    console.error('Failed to initialize PostgreSQL:', error);
     process.exit(1);
   });
