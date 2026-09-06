@@ -16,10 +16,14 @@ const COOKIE_OPTIONS = {
 };
 
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 20,                 // Raised limit to avoid blocking during dev/testing
   standardHeaders: "draft-8",
   legacyHeaders: false,
+  // Key generator explicitly extracts IP behind Render's reverse proxy
+  keyGenerator: (req) => {
+    return (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || 'unknown';
+  },
   message: {
     detail: "Too many login attempts. Please try again later.",
   },
