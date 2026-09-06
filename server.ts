@@ -1,5 +1,6 @@
 ﻿import 'dotenv/config';
 import express, { Request, Response } from 'express';
+import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import multer from 'multer';
@@ -15,7 +16,31 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-app.use(helmet());
+// Configure CORS before routes and middleware
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g., mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+
+      // Dynamically allow Vercel previews/deployments and local dev environment
+      if (origin.includes('vercel.app') || origin.includes('localhost')) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
+
+// Disable crossOriginResourcePolicy in Helmet so resources can be shared cross-origin
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
 app.use(cookieParser());
 
 app.use(express.json());
