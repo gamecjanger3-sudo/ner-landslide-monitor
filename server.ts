@@ -17,24 +17,29 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Configure CORS before routes and middleware
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (e.g., mobile apps, curl, Postman)
-      if (!origin) return callback(null, true);
+const allowedCorsMiddleware = cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g., mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
 
-      // Dynamically allow Vercel previews/deployments and local dev environment
-      if (origin.includes('vercel.app') || origin.includes('localhost')) {
-        return callback(null, true);
-      }
+    // Dynamically allow Vercel previews/deployments and local dev environment
+    if (origin.includes('vercel.app') || origin.includes('localhost')) {
+      return callback(null, true);
+    }
 
-      return callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-  })
-);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+});
 
-// Disable crossOriginResourcePolicy in Helmet so resources can be shared cross-origin
+app.use(allowedCorsMiddleware);
+
+// Handle CORS preflight explicitly across all endpoints
+app.options('*', allowedCorsMiddleware);
+
+// Configure Helmet for cross-origin assets
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -42,15 +47,22 @@ app.use(
 );
 
 app.use(cookieParser());
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Health check endpoints for Render root/health
+app.get('/', (req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok', message: 'Backend server is active' });
+});
+
+app.get('/api/health', (req: Request, res: Response) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
 
 // Authentication API
 app.use('/api/auth', authRouter);
 
 // Configure Multer in-memory storage
-// Prevents write errors on Render's ephemeral disk
 const storage = multer.memoryStorage();
 
 const upload = multer({
@@ -136,9 +148,11 @@ app.post(
   },
 );
 
+// Serve static build if dist folder exists
 app.use(express.static(path.resolve(__dirname, 'dist')));
 
-app.get('/{*path}', (req: Request, res: Response) => {
+// Fallback route for SPA / unhandled routes
+app.get('*', (req: Request, res: Response) => {
   if (req.path.startsWith('/api')) {
     res.status(404).json({
       error: 'API endpoint not found',
@@ -146,16 +160,21 @@ app.get('/{*path}', (req: Request, res: Response) => {
     return;
   }
 
-  res.sendFile(
-    path.resolve(__dirname, 'dist', 'index.html'),
-  );
+  const indexPath = path.resolve(__dirname, 'dist', 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      res.status(200).json({ status: 'ok', message: 'API Server is running.' });
+    }
+  });
 });
 
 const PORT = Number(process.env.PORT) || 5000;
 
 // Initialize PostgreSQL before starting the server
+console.log('Connecting to PostgreSQL database...');
 initializePostgres()
   .then(() => {
+    console.log('PostgreSQL initialized successfully.');
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
     });
