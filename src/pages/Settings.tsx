@@ -1,4 +1,4 @@
-import { Bell, Wifi, Languages, Save } from 'lucide-react'
+﻿import { Bell, Wifi, Languages, Save, User, LogOut } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -22,7 +22,11 @@ const REVERSE_LANGUAGE_CODES: Record<string, string> = {
   ne: 'Nepali',
 }
 
-function Settings() {
+interface SettingsProps {
+  onLogout: () => void
+}
+
+function Settings({ onLogout }: SettingsProps) {
   const { t, i18n } = useTranslation()
 
   // Derive active language string directly during render
@@ -93,10 +97,10 @@ function Settings() {
           className="w-full md:w-96 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400"
         >
           <option value="English">English</option>
-          <option value="Hindi">Hindi (हिंदी)</option>
-          <option value="Assamese">Assamese (অসমীয়া)</option>
-          <option value="Bengali">Bengali (বাংলা)</option>
-          <option value="Nepali">Nepali (नेपाली)</option>
+          <option value="Hindi">Hindi (à¤¹à¤¿à¤‚à¤¦à¥€)</option>
+          <option value="Assamese">Assamese (à¦…à¦¸à¦®à§€à¦¯à¦¼à¦¾)</option>
+          <option value="Bengali">Bengali (à¦¬à¦¾à¦‚à¦²à¦¾)</option>
+          <option value="Nepali">Nepali (à¤¨à¥‡à¤ªà¤¾à¤²à¥€)</option>
           <option value="Manipuri">Manipuri</option>
           <option value="Mizo">Mizo</option>
           <option value="Khasi">Khasi</option>
@@ -210,7 +214,50 @@ function Settings() {
         </div>
       </div>
 
-      {/* Save button */}
+      {/* Account */}
+  <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="p-3 bg-purple-100 text-purple-600 rounded-lg">
+        <User size={22} />
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-slate-900">
+          My Profile
+        </h2>
+        <p className="text-sm text-slate-500">
+          View your account information and sign out.
+        </p>
+      </div>
+    </div>
+
+    <div className="space-y-4">
+      <div>
+        <p className="text-sm text-slate-500">Name</p>
+        <p className="font-medium text-slate-800">
+          {JSON.parse(localStorage.getItem('ner_user') || '{}').full_name || 'User'}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-sm text-slate-500">Email</p>
+        <p className="font-medium text-slate-800">
+          {JSON.parse(localStorage.getItem('ner_user') || '{}').email || 'Not available'}
+        </p>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100">
+        <button
+          onClick={onLogout}
+          className="flex items-center gap-2 px-5 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
+        >
+          <LogOut size={18} />
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+  {/* Save button */}
       <div className="flex justify-end">
         <button
           onClick={handleSave}
@@ -225,3 +272,4 @@ function Settings() {
 }
 
 export default Settings
+
