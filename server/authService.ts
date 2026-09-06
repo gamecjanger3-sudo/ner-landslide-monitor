@@ -1,179 +1,112 @@
-﻿import "dotenv/config";
+﻿import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { query } from "./postgresDb.js";
+import { pool } from "./postgresDb.js";
 
-const JWT_SECRET = process.env.JWT_SECRET_KEY;
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_change_in_prod";
 
-if (!JWT_SECRET) {
-  throw new Error(
-    "JWT_SECRET_KEY is not configured. Set it in the environment before starting the server.",
-  );
+export interface UserPayload {
+  id: number;
+  full_name: string;
+  email: string;
+  is_active?: boolean;
+  created_at?: string;
 }
 
-const JWT_EXPIRES_IN = "1h";
-
-export type AuthUser = {
-  id: number;
-  full_name: string;
-  email: string;
-  is_active: boolean;
-  created_at: string;
-};
-
-type UserRow = {
-  id: number;
-  full_name: string;
-  email: string;
-  password_hash?: string;
-  is_active: boolean;
-  created_at: string | Date;
-};
-
-function rowToUser(row: UserRow): AuthUser {
-  return {
-    id: Number(row.id),
-    full_name: String(row.full_name),
-    email: String(row.email),
-    is_active: Boolean(row.is_active),
-    created_at: new Date(row.created_at).toISOString(),
-  };
+export interface AuthResult {
+  access_token: string;
+  user: UserPayload;
 }
 
 export async function signup(
   fullName: string,
   email: string,
-  password: string,
-) {
+  pass: string
+): Promise<AuthResult> {
   const normalizedEmail = email.trim().toLowerCase();
 
-  const existing = await query<{ id: number }>(
+  const existingUser = await pool.query(
     "SELECT id FROM users WHERE email = $1",
-    [normalizedEmail],
+    [normalizedEmail]
   );
 
-  if (existing.rowCount && existing.rowCount > 0) {
-    throw new Error("An account with this email already exists.");
+  if (existingUser.rows.length > 0) {
+    throw new Error("User with this email already exists.");
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(pass, saltRounds);
 
-  const result = await query<UserRow>(
-    `
-      INSERT INTO users
-        (full_name, email, password_hash, is_active)
-      VALUES
-        ($1, $2, $3, TRUE)
-      RETURNING id, full_name, email, is_active, created_at
-    `,
-    [fullName.trim(), normalizedEmail, passwordHash],
+  const insertResult = await pool.query(
+    `INSERT INTO users (full_name, email, password_hash)
+     VALUES ($1, $2, $3)
+     RETURNING id, full_name, email, created_at`,
+    [fullName.trim(), normalizedEmail, hashedPassword]
   );
 
-  if (result.rows.length === 0) {
-    throw new Error("User was created but could not be loaded.");
-  }
+  const user = insertResult.rows[0];
 
-  const user = rowToUser(result.rows[0]);
+  const access_token = jwt.sign(
+    { id: user.id, email: user.email },
+    JWT_SECRET,
+    { expiresIn: "24h" }
+  );
 
-  return {
-    user,
-    access_token: createToken(user.id),
-  };
+  return { access_token, user };
 }
 
-export async function login(email: string, password: string) {
+export async function login(
+  email: string,
+  pass: string
+): Promise<AuthResult> {
   const normalizedEmail = email.trim().toLowerCase();
 
-  const result = await query<UserRow>(
-    `
-      SELECT
-        id,
-        full_name,
-        email,
-        password_hash,
-        is_active,
-        created_at
-      FROM users
-      WHERE email = $1
-    `,
-    [normalizedEmail],
+  const userResult = await pool.query(
+    "SELECT id, full_name, email, password_hash, created_at FROM users WHERE email = $1",
+    [normalizedEmail]
   );
 
-  if (result.rows.length === 0) {
+  if (userResult.rows.length === 0) {
     throw new Error("Invalid email or password.");
   }
 
-  const row = result.rows[0];
+  const user = userResult.rows[0];
 
-  const validPassword = await bcrypt.compare(
-    password,
-    String(row.password_hash),
-  );
-
-  if (!validPassword) {
+  const isValidPassword = await bcrypt.compare(pass, user.password_hash);
+  if (!isValidPassword) {
     throw new Error("Invalid email or password.");
   }
 
-  if (!row.is_active) {
-    throw new Error("This account is disabled.");
-  }
+  const access_token = jwt.sign(
+    { id: user.id, email: user.email },
+    JWT_SECRET,
+    { expiresIn: "24h" }
+  );
 
-  const user = rowToUser(row);
-
-  return {
-    user,
-    access_token: createToken(user.id),
+  const userPayload: UserPayload = {
+    id: user.id,
+    full_name: user.full_name,
+    email: user.email,
+    created_at: user.created_at,
   };
+
+  return { access_token, user: userPayload };
 }
 
-export async function getUserFromToken(token: string) {
+export async function getUserFromToken(token: string): Promise<UserPayload> {
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; email: string };
 
-    if (!payload.sub) {
-      throw new Error("Invalid token.");
-    }
-
-    const userId = Number(payload.sub);
-
-    if (!Number.isInteger(userId)) {
-      throw new Error("Invalid token.");
-    }
-
-    const result = await query<UserRow>(
-      `
-        SELECT
-          id,
-          full_name,
-          email,
-          is_active,
-          created_at
-        FROM users
-        WHERE id = $1
-      `,
-      [userId],
+    const userResult = await pool.query(
+      "SELECT id, full_name, email, created_at FROM users WHERE id = $1",
+      [decoded.id]
     );
 
-    if (result.rows.length === 0) {
+    if (userResult.rows.length === 0) {
       throw new Error("User not found.");
     }
 
-    const user = rowToUser(result.rows[0]);
-
-    if (!user.is_active) {
-      throw new Error("This account is disabled.");
-    }
-
-    return user;
-  } catch {
-    throw new Error("Invalid or expired authentication token.");
+    return userResult.rows[0];
+  } catch (err) {
+    throw new Error("Invalid or expired session token.");
   }
-}
-
-function createToken(userId: number): string {
-  return jwt.sign(
-    { sub: String(userId) },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN },
-  );
 }
