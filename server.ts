@@ -16,6 +16,34 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // 1. Configure CORS
+const allowedOrigins = [
+  'https://ner-landslide-monitor-pqlbgcjc5-gamecjanger3-9086.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (Postman, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost')
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
 const allowedCorsMiddleware = cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
