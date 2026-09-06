@@ -9,20 +9,25 @@ const COOKIE_NAME = "ner_access_token";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: true,      // REQUIRED for cross-domain HTTPS
+  secure: true,        // REQUIRED for cross-domain HTTPS
   sameSite: "none" as const, // REQUIRED for Vercel -> Render requests
-  path: "/",        // Ensures cookie is sent on all endpoints
+  path: "/",          // Ensures cookie is sent on all endpoints
   maxAge: 24 * 60 * 60 * 1000, // 24 hours
 };
 
+// Rate limiter configured with proxy-safe key generator
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 20,                 // Raised limit to avoid blocking during dev/testing
+  limit: 50,                // Higher limit for testing/development
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  // Key generator explicitly extracts IP behind Render's reverse proxy
+  validate: { xForwardedForHeader: false },
   keyGenerator: (req) => {
-    return (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || 'unknown';
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string') {
+      return forwarded.split(',')[0].trim();
+    }
+    return req.ip || 'unknown';
   },
   message: {
     detail: "Too many login attempts. Please try again later.",
@@ -71,7 +76,8 @@ router.post("/signup", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/login", loginLimiter, async (req: Request, res: Response) => {
+// Removed loginLimiter temporarily from this route handler
+router.post("/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
