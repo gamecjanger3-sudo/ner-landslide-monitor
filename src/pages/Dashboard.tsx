@@ -1,28 +1,31 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+
+import { translateDynamicText } from "../i18n"; // <--- Import from Step 1
+
 import {
   AlertTriangle,
   TriangleAlert,
-  ShieldCheck,
   CloudRain,
-  Droplets,
-  Search,
+  ShieldCheck,
   Loader2,
+  Search,
+  Droplets,
 } from "lucide-react";
-
 import {
+  ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
+  CartesianGrid,
 } from "recharts";
 
 import RiskCard from "../components/RiskCard";
 import { fetchWeatherByCity } from "../services/weatherService";
 import type { WeatherData } from "../services/weatherService";
+
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -30,8 +33,6 @@ export default function Dashboard() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  
 
   const handleFetchWeather = useCallback(async (cityName: string) => {
     if (!cityName.trim()) return;
@@ -47,9 +48,8 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, []); // Empty array because setStates are stable
-  
-  // ✅ Fixed version:
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -85,8 +85,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Page heading */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">{t("dashboard")}</h1>
-
+        <h1 className="text-3xl font-bold text-slate-900">{t("Dashboard")}</h1>
         <p className="mt-1 text-slate-500">
           Real-time overview of landslide risk across the North Eastern Region.
         </p>
@@ -136,7 +135,6 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold text-slate-900">
                 Risk Trend
               </h2>
-
               <p className="text-sm text-slate-500">
                 Landslide risk over the last 7 days
               </p>
@@ -158,13 +156,9 @@ export default function Dashboard() {
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-
                 <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-
                 <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-
                 <Tooltip />
-
                 <Line
                   type="monotone"
                   dataKey="risk"
@@ -182,7 +176,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">
-                  {t("weather")}
+                  {t("Weather")}
                 </h2>
                 <p className="text-sm text-slate-500">
                   Real-time API monitoring
@@ -290,7 +284,6 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold text-slate-900">
             Recent Alerts
           </h2>
-
           <p className="text-sm text-slate-500 mt-1">
             Latest high-risk locations detected by the monitoring system.
           </p>
@@ -301,19 +294,15 @@ export default function Dashboard() {
           <div className="p-5 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-3 h-3 rounded-full bg-red-500" />
-
               <div>
                 <p className="font-medium text-slate-900">East Khasi Hills</p>
-
                 <p className="text-sm text-slate-500">
                   Heavy rainfall and high soil moisture detected
                 </p>
               </div>
             </div>
-
             <div className="text-right">
               <p className="font-bold text-red-600">92%</p>
-
               <p className="text-xs text-red-500">Critical</p>
             </div>
           </div>
@@ -322,19 +311,15 @@ export default function Dashboard() {
           <div className="p-5 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-3 h-3 rounded-full bg-orange-500" />
-
               <div>
                 <p className="font-medium text-slate-900">Aizawl</p>
-
                 <p className="text-sm text-slate-500">
                   Increased rainfall detected in vulnerable zone
                 </p>
               </div>
             </div>
-
             <div className="text-right">
               <p className="font-bold text-orange-600">78%</p>
-
               <p className="text-xs text-orange-500">High</p>
             </div>
           </div>
@@ -343,19 +328,15 @@ export default function Dashboard() {
           <div className="p-5 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-3 h-3 rounded-full bg-yellow-500" />
-
               <div>
                 <p className="font-medium text-slate-900">Gangtok</p>
-
                 <p className="text-sm text-slate-500">
                   Moderate environmental risk detected
                 </p>
               </div>
             </div>
-
             <div className="text-right">
               <p className="font-bold text-yellow-600">54%</p>
-
               <p className="text-xs text-yellow-600">Moderate</p>
             </div>
           </div>

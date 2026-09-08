@@ -18,7 +18,7 @@ import { NavLink } from 'react-router-dom'
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
-  { code: 'hi', name: 'Hindi (हिंदी)' },
+  { code: 'hi', name: 'हिंदी' },
   
 ]
 
@@ -54,12 +54,12 @@ function Sidebar() {
 
   // Define nav items with matching IDs for driver.js
   const navItems = [
-    { id: 'nav-dashboard', name: t('dashboard'), path: '/dashboard', icon: LayoutDashboard },
-    { id: 'nav-risk-map', name: t('riskMap'), path: '/risk-map', icon: Map },
-    { id: 'nav-weather', name: t('weather'), path: '/weather', icon: CloudSun },
-    { id: 'nav-alerts', name: t('alerts'), path: '/alerts', icon: Bell },
-    { id: 'nav-reports', name: t('reports'), path: '/reports', icon: FileText },
-    { id: 'nav-settings', name: t('settings'), path: '/settings', icon: Settings },
+    { id: 'nav-dashboard', name: t('Dashboard'), path: '/dashboard', icon: LayoutDashboard },
+    { id: 'nav-risk-map', name: t('Risk Map'), path: '/risk-map', icon: Map },
+    { id: 'nav-weather', name: t('Weather'), path: '/weather', icon: CloudSun },
+    { id: 'nav-alerts', name: t('Alerts'), path: '/alerts', icon: Bell },
+    { id: 'nav-reports', name: t('Reports'), path: '/reports', icon: FileText },
+    { id: 'nav-settings', name: t('Settings'), path: '/settings', icon: Settings },
   ]
 
   // Helper function to open drawer and launch tour

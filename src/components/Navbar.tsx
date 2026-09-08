@@ -1,17 +1,25 @@
-import { Bell, Search } from 'lucide-react'
+import React from 'react'
+import { Bell, Search, Globe } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 function Navbar() {
+  const { t, i18n } = useTranslation()
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    i18n.changeLanguage(e.target.value)
+  }
+
   return (
     <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8">
 
       {/* Page title */}
       <div>
         <h2 className="text-xl font-semibold text-slate-900">
-          Disaster Monitoring Dashboard
+          {t('dashboardTitle', { defaultValue: 'Disaster Monitoring Dashboard' })}
         </h2>
 
         <p className="text-sm text-slate-500">
-          North Eastern Region
+          {t('regionSubtitle', { defaultValue: 'North Eastern Region' })}
         </p>
       </div>
 
@@ -24,9 +32,22 @@ function Navbar() {
 
           <input
             type="text"
-            placeholder="Search..."
+            placeholder={t('searchPlaceholder', { defaultValue: 'Search...' })}
             className="bg-transparent outline-none text-sm w-40"
           />
+        </div>
+
+        {/* Language Selector Dropdown */}
+        <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-2 rounded-lg border border-slate-200">
+          <Globe size={18} className="text-slate-600" />
+          <select
+            value={i18n.language}
+            onChange={handleLanguageChange}
+            className="bg-transparent text-sm font-medium text-slate-800 outline-none cursor-pointer"
+          >
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
+          </select>
         </div>
 
         {/* Notification */}
