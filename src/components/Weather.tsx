@@ -11,6 +11,7 @@ import {
 
 import {
   fetchWeatherByCity,
+  fetchWeatherByCoords,
   type WeatherData,
 } from '../services/weatherService'
 
@@ -18,7 +19,7 @@ export default function Weather() {
   const { t } = useTranslation()
 
   const [searchCity, setSearchCity] = useState('')
-  const [selectedCity, setSelectedCity] = useState('Shillong')
+  const [selectedCity, setSelectedCity] = useState('')
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,23 +33,187 @@ export default function Weather() {
     'Kohima',
   ]
 
-  const loadWeather = async (city: string) => {
+  // --------------------------------------------------
+  // Load weather using user's saved browser location
+  // --------------------------------------------------
+  const loadWeatherByLocation = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      // First try saved location from login
+      const savedLocation = localStorage.getItem('userLocation')
+
+      if (savedLocation) {
+        try {
+          const location = JSON.parse(savedLocation)
+
+          const latitude = Number(location.latitude)
+          const longitude = Number(location.longitude)
+
+          if (
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude)
+          ) {
+            console.log(
+              'Loading weather using saved location:',
+              latitude,
+              longitude
+            )
+
+            const data = await fetchWeatherByCoords(
+              latitude,
+              longitude
+            )
+
+            setWeather(data)
+            setSelectedCity(data.name)
+            setError(null)
+
+            return
+          }
+        } catch (parseError) {
+          console.error(
+            'Invalid saved location:',
+            parseError
+          )
+        }
+      }
+
+      // --------------------------------------------------
+      // If location was not saved during login,
+      // request browser location automatically.
+      // --------------------------------------------------
+      if (!navigator.geolocation) {
+        throw new Error(
+          'Geolocation is not supported by this browser.'
+        )
+      }
+
+      console.log(
+        'No saved location found. Requesting browser location...'
+      )
+
+      const position =
+        await new Promise<GeolocationPosition>(
+          (resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              resolve,
+              reject,
+              {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 300000,
+              }
+            )
+          }
+        )
+
+      const latitude = position.coords.latitude
+      const longitude = position.coords.longitude
+
+      // Save location so it can be reused later
+      localStorage.setItem(
+        'userLocation',
+        JSON.stringify({
+          latitude,
+          longitude,
+        })
+      )
+
+      console.log(
+        'Browser location received:',
+        latitude,
+        longitude
+      )
+
+      const data = await fetchWeatherByCoords(
+        latitude,
+        longitude
+      )
+
+      setWeather(data)
+      setSelectedCity(data.name)
+      setError(null)
+    } catch (err) {
+      console.error(
+        'Location weather error:',
+        err
+      )
+
+      setWeather(null)
+
+      if (
+        err instanceof GeolocationPositionError
+      ) {
+        if (err.code === 1) {
+          setError(
+            'Location permission was denied. Please allow location access and reload the page.'
+          )
+        } else if (err.code === 2) {
+          setError(
+            'Unable to determine your location.'
+          )
+        } else if (err.code === 3) {
+          setError(
+            'Location request timed out. Please try again.'
+          )
+        } else {
+          setError(
+            'Unable to get your current location.'
+          )
+        }
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load weather data.'
+        )
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // --------------------------------------------------
+  // Load weather for searched city
+  // --------------------------------------------------
+  const loadWeatherByCityName = async (
+    city: string
+  ) => {
     const trimmedCity = city.trim()
 
-    if (!trimmedCity) return
+    if (!trimmedCity) {
+      setError('City is required.')
+      return
+    }
 
     setLoading(true)
     setError(null)
 
     try {
-      const data = await fetchWeatherByCity(trimmedCity)
+      console.log(
+        'Loading weather for city:',
+        trimmedCity
+      )
+
+      const data =
+        await fetchWeatherByCity(trimmedCity)
 
       setWeather(data)
       setSelectedCity(data.name)
+
+      // Important:
+      // Clear old validation/API error after success
+      setError(null)
     } catch (err) {
-      console.error('Weather API error:', err)
+      console.error(
+        'Weather API error:',
+        err
+      )
 
       setWeather(null)
+
       setError(
         err instanceof Error
           ? err.message
@@ -59,18 +224,34 @@ export default function Weather() {
     }
   }
 
+  // --------------------------------------------------
+  // INITIAL LOAD
+  // --------------------------------------------------
   useEffect(() => {
-    loadWeather('Shillong')
+    loadWeatherByLocation()
   }, [])
 
-  const handleSearch = (e: React.FormEvent) => {
+  // --------------------------------------------------
+  // Search form
+  // --------------------------------------------------
+  const handleSearch = (
+    e: React.FormEvent
+  ) => {
     e.preventDefault()
-    loadWeather(searchCity)
+
+    loadWeatherByCityName(searchCity)
   }
 
-  const handleCitySelect = (city: string) => {
+  // --------------------------------------------------
+  // Quick city buttons
+  // --------------------------------------------------
+  const handleCitySelect = (
+    city: string
+  ) => {
     setSearchCity('')
-    loadWeather(city)
+    setError(null)
+
+    loadWeatherByCityName(city)
   }
 
   return (
@@ -96,8 +277,17 @@ export default function Weather() {
             <input
               type="text"
               value={searchCity}
-              onChange={(e) => setSearchCity(e.target.value)}
-              placeholder={t('Search Placeholder')}
+              onChange={(e) => {
+                setSearchCity(e.target.value)
+
+                // Remove old error while user starts typing
+                if (error) {
+                  setError(null)
+                }
+              }}
+              placeholder={t(
+                'Search Placeholder'
+              )}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
@@ -109,7 +299,10 @@ export default function Weather() {
 
           <button
             type="submit"
-            disabled={loading || !searchCity.trim()}
+            disabled={
+              loading ||
+              !searchCity.trim()
+            }
             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
@@ -141,7 +334,9 @@ export default function Weather() {
           {cities.map((city) => (
             <button
               key={city}
-              onClick={() => handleCitySelect(city)}
+              onClick={() =>
+                handleCitySelect(city)
+              }
               disabled={loading}
               className={`px-3 py-1 rounded-lg transition-all shrink-0 ${
                 selectedCity === city
@@ -189,12 +384,16 @@ export default function Weather() {
               </h2>
 
               <p className="text-sm opacity-90 mt-0.5 capitalize">
-                {weather.weather[0]?.description || 'N/A'}
+                {weather.weather[0]
+                  ?.description || 'N/A'}
               </p>
             </div>
 
             <div className="text-5xl font-black tracking-tight">
-              {Math.round(weather.main.temp)}°C
+              {Math.round(
+                weather.main.temp
+              )}
+              °C
             </div>
           </div>
 
@@ -230,7 +429,8 @@ export default function Weather() {
                 </p>
 
                 <p className="text-2xl font-bold text-slate-800">
-                  {weather.weather[0]?.main || 'N/A'}
+                  {weather.weather[0]
+                    ?.main || 'N/A'}
                 </p>
               </div>
             </div>
@@ -247,7 +447,10 @@ export default function Weather() {
                 </p>
 
                 <p className="text-2xl font-bold text-slate-800">
-                  {Math.round(weather.main.temp)}°C
+                  {Math.round(
+                    weather.main.temp
+                  )}
+                  °C
                 </p>
               </div>
             </div>
@@ -268,6 +471,7 @@ export default function Weather() {
                 </p>
               </div>
             </div>
+
           </div>
         </div>
       )}

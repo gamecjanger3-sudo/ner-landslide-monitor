@@ -19,9 +19,7 @@ import { NavLink } from 'react-router-dom'
 const LANGUAGES = [
   { code: 'en', name: 'English' },
   { code: 'hi', name: 'Hindi (हिंदी)' },
-  { code: 'bn', name: 'Bengali (বাংলা)' },
-  { code: 'as', name: 'Assamese (অসমীয়া)' },
-  { code: 'ne', name: 'Nepali (नेपाली)' },
+  
 ]
 
 function Sidebar() {

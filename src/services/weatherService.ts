@@ -16,28 +16,34 @@ export interface WeatherData {
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL &&
-  !import.meta.env.VITE_API_BASE_URL.includes('your-new-render-app')
+  !import.meta.env.VITE_API_BASE_URL.includes("your-new-render-app")
     ? import.meta.env.VITE_API_BASE_URL
-    : 'https://ner-landslide-monitor-pj1l.onrender.com';
+    : "https://ner-landslide-monitor-pj1l.onrender.com";
 
+/**
+ * Search weather by city
+ */
 export const fetchWeatherByCity = async (
-  city: string
+  city: string,
 ): Promise<WeatherData> => {
   const trimmedCity = city.trim();
 
   if (!trimmedCity) {
-    throw new Error('City name is required.');
+    throw new Error("City is required");
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/api/weather?city=${encodeURIComponent(trimmedCity)}`
+    `${API_BASE_URL}/api/weather?city=${encodeURIComponent(
+      trimmedCity,
+    )}`,
   );
 
   const data = await response.json();
 
   if (!response.ok) {
     throw new Error(
-      data?.error || `Weather API request failed (${response.status})`
+      data?.error ||
+        `Weather API request failed (${response.status})`,
     );
   }
 
@@ -51,17 +57,43 @@ export const fetchWeatherByCity = async (
   };
 };
 
+/**
+ * Weather using user's GPS coordinates
+ */
 export const fetchWeatherByCoords = async (
   lat: number,
-  lon: number
+  lon: number,
 ): Promise<WeatherData> => {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-    throw new Error('Valid latitude and longitude are required.');
+    throw new Error(
+      "Valid latitude and longitude are required.",
+    );
   }
 
-  // Coordinate-based weather is not currently exposed
-  // through the backend weather proxy.
-  throw new Error(
-    'Coordinate weather fetching is not configured yet.'
+  const response = await fetch(
+    `${API_BASE_URL}/api/weather?lat=${encodeURIComponent(
+      lat,
+    )}&lon=${encodeURIComponent(lon)}`,
   );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error ||
+        `Weather API request failed (${response.status})`,
+    );
+  }
+
+  return {
+    name: data.name,
+    main: {
+      temp: data.main.temp,
+      humidity: data.main.humidity,
+    },
+    weather: data.weather,
+  };
 };
+
+export const fetchWeatherByCoordinates =
+  fetchWeatherByCoords;

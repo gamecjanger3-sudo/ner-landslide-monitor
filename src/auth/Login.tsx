@@ -42,12 +42,57 @@ export default function Login({
 
     try {
       setIsLoading(true);
+
+      // Authenticate user first
       await login({
         email,
         password,
       });
 
-      onLoginSuccess();
+      /*
+       * Get user's current location immediately after successful login.
+       *
+       * This does NOT block login if the user denies location access.
+       */
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userLocation = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            };
+
+            // Save coordinates for Weather page
+            localStorage.setItem(
+              "userLocation",
+              JSON.stringify(userLocation),
+            );
+
+            console.log("User location saved:", userLocation);
+
+            // Continue to application
+            onLoginSuccess();
+          },
+          (locationError) => {
+            console.warn(
+              "Location access was not available:",
+              locationError.message,
+            );
+
+            // Login should still work even if location is denied
+            onLoginSuccess();
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 5 * 60 * 1000,
+          },
+        );
+      } else {
+        console.warn("Geolocation is not supported by this browser.");
+
+        onLoginSuccess();
+      }
     } catch (error) {
       setError(
         error instanceof Error
@@ -160,7 +205,11 @@ export default function Login({
 
             {error && <div className="auth-error">{error}</div>}
 
-            <button type="submit" className="auth-submit" disabled={isLoading}>
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={isLoading}
+            >
               {isLoading ? "Signing in..." : "Sign in"}
               <ArrowRight size={18} />
             </button>
@@ -172,7 +221,11 @@ export default function Login({
 
           <p className="switch-auth">
             Don't have an account?{" "}
-            <button type="button" onClick={onSwitchToSignup} disabled={isLoading}>
+            <button
+              type="button"
+              onClick={onSwitchToSignup}
+              disabled={isLoading}
+            >
               Create account
             </button>
           </p>
