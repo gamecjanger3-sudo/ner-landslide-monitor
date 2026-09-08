@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 
 interface RiskCardProps {
   title: string
-  value: number
+  value: string | number
   icon: LucideIcon
   description: string
   iconBg: string
@@ -18,7 +18,6 @@ function RiskCard({
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
       <div className="flex items-start justify-between">
-        
         <div>
           <p className="text-sm font-medium text-slate-500">
             {title}
@@ -36,7 +35,6 @@ function RiskCard({
         <div className={`p-3 rounded-lg ${iconBg}`}>
           <Icon size={22} />
         </div>
-
       </div>
     </div>
   )

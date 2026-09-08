@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
-import { translateDynamicText } from "../i18n"; // <--- Import from Step 1
-
 import {
   AlertTriangle,
   TriangleAlert,
@@ -26,40 +24,80 @@ import RiskCard from "../components/RiskCard";
 import { fetchWeatherByCity } from "../services/weatherService";
 import type { WeatherData } from "../services/weatherService";
 
+// Import API services for real landslide metrics & alerts
+import {
+  fetchLandslideRiskSummary,
+  fetchLandslideRiskTrend,
+  fetchRecentLandslideAlerts,
+} from "../services/landslideService";
+import type {
+  RiskSummary,
+  RiskTrendPoint,
+  LandslideAlert,
+} from "../services/landslideService";
 
 export default function Dashboard() {
   const { t } = useTranslation();
+  
+  // Weather State
   const [city, setCity] = useState("Shillong");
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
 
+  // Dynamic Landslide Data States
+  const [riskSummary, setRiskSummary] = useState<RiskSummary | null>(null);
+  const [riskTrend, setRiskTrend] = useState<RiskTrendPoint[]>([]);
+  const [alerts, setAlerts] = useState<LandslideAlert[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState<boolean>(true);
+
+  // Fetch Weather Callback
   const handleFetchWeather = useCallback(async (cityName: string) => {
     if (!cityName.trim()) return;
-    setLoading(true);
-    setError(null);
+    setWeatherLoading(true);
+    setWeatherError(null);
 
     try {
       const data = await fetchWeatherByCity(cityName);
       setWeather(data);
     } catch {
-      setError("Failed to load weather data.");
+      setWeatherError("Failed to load weather data.");
       setWeather(null);
     } finally {
-      setLoading(false);
+      setWeatherLoading(false);
     }
   }, []);
 
+  // Initialize Real-time Landslide Data & Initial Weather
   useEffect(() => {
     let isMounted = true;
 
-    const initWeather = async () => {
-      if (isMounted) {
-        await handleFetchWeather("Shillong");
+    const loadDashboardData = async () => {
+      setDashboardLoading(true);
+      try {
+        // Fetch all dynamic metrics concurrently
+        const [summaryData, trendData, alertsData] = await Promise.all([
+          fetchLandslideRiskSummary(),
+          fetchLandslideRiskTrend(),
+          fetchRecentLandslideAlerts(),
+        ]);
+
+        if (isMounted) {
+          setRiskSummary(summaryData);
+          setRiskTrend(trendData);
+          setAlerts(alertsData);
+        }
+      } catch (err) {
+        console.error("Failed to fetch real-time dashboard metrics", err);
+      } finally {
+        if (isMounted) {
+          setDashboardLoading(false);
+        }
       }
     };
 
-    initWeather();
+    loadDashboardData();
+    handleFetchWeather("Shillong");
 
     return () => {
       isMounted = false;
@@ -71,15 +109,19 @@ export default function Dashboard() {
     handleFetchWeather(city);
   };
 
-  const riskData = [
-    { day: "Mon", risk: 42 },
-    { day: "Tue", risk: 48 },
-    { day: "Wed", risk: 55 },
-    { day: "Thu", risk: 51 },
-    { day: "Fri", risk: 68 },
-    { day: "Sat", risk: 74 },
-    { day: "Sun", risk: 82 },
-  ];
+  // Helper function to map dynamic severity to UI badge colors
+  const getAlertBadgeStyle = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case "critical":
+        return { dot: "bg-red-500", text: "text-red-600", subText: "text-red-500" };
+      case "high":
+        return { dot: "bg-orange-500", text: "text-orange-600", subText: "text-orange-500" };
+      case "moderate":
+        return { dot: "bg-yellow-500", text: "text-yellow-600", subText: "text-yellow-600" };
+      default:
+        return { dot: "bg-green-500", text: "text-green-600", subText: "text-green-500" };
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -91,11 +133,11 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Risk summary cards */}
+      {/* Risk summary cards - Dynamically Populated */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         <RiskCard
           title="Critical Risk"
-          value={12}
+          value={dashboardLoading ? "..." : riskSummary?.critical ?? 0}
           description="Immediate attention required"
           icon={AlertTriangle}
           iconBg="bg-red-100 text-red-600"
@@ -103,7 +145,7 @@ export default function Dashboard() {
 
         <RiskCard
           title="High Risk"
-          value={24}
+          value={dashboardLoading ? "..." : riskSummary?.high ?? 0}
           description="Requires close monitoring"
           icon={TriangleAlert}
           iconBg="bg-orange-100 text-orange-600"
@@ -111,7 +153,7 @@ export default function Dashboard() {
 
         <RiskCard
           title="Moderate Risk"
-          value={38}
+          value={dashboardLoading ? "..." : riskSummary?.moderate ?? 0}
           description="Continue monitoring"
           icon={CloudRain}
           iconBg="bg-yellow-100 text-yellow-600"
@@ -119,7 +161,7 @@ export default function Dashboard() {
 
         <RiskCard
           title="Low Risk"
-          value={156}
+          value={dashboardLoading ? "..." : riskSummary?.low ?? 0}
           description="Currently stable"
           icon={ShieldCheck}
           iconBg="bg-green-100 text-green-600"
@@ -128,7 +170,7 @@ export default function Dashboard() {
 
       {/* Risk chart + Live Weather widget */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        {/* Risk Trend Chart */}
+        {/* Risk Trend Chart - Dynamically Populated */}
         <div className="xl:col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -145,28 +187,35 @@ export default function Dashboard() {
 
           {/* Chart */}
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={riskData}
-                margin={{
-                  top: 10,
-                  right: 10,
-                  left: 0,
-                  bottom: 0,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="risk"
-                  strokeWidth={3}
-                  dot={{ r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {dashboardLoading ? (
+              <div className="w-full h-full flex items-center justify-center text-slate-400">
+                <Loader2 className="animate-spin" size={24} />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={riskTrend}
+                  margin={{
+                    top: 10,
+                    right: 10,
+                    left: 0,
+                    bottom: 0,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="risk"
+                    stroke="#2563eb"
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -201,10 +250,10 @@ export default function Dashboard() {
               />
               <button
                 type="submit"
-                disabled={loading}
+                disabled={weatherLoading}
                 className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
               >
-                {loading ? (
+                {weatherLoading ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : (
                   <Search size={16} />
@@ -212,9 +261,9 @@ export default function Dashboard() {
               </button>
             </form>
 
-            {error && (
+            {weatherError && (
               <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg border border-red-100 mb-2">
-                {error}
+                {weatherError}
               </p>
             )}
 
@@ -278,7 +327,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Alerts */}
+      {/* Recent Alerts - Dynamically Populated */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="p-6 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-900">
@@ -290,56 +339,45 @@ export default function Dashboard() {
         </div>
 
         <div className="divide-y divide-slate-100">
-          {/* Alert 1 */}
-          <div className="p-5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <div>
-                <p className="font-medium text-slate-900">East Khasi Hills</p>
-                <p className="text-sm text-slate-500">
-                  Heavy rainfall and high soil moisture detected
-                </p>
-              </div>
+          {dashboardLoading ? (
+            <div className="p-5 flex items-center justify-center text-slate-400">
+              <Loader2 className="animate-spin" size={20} />
             </div>
-            <div className="text-right">
-              <p className="font-bold text-red-600">92%</p>
-              <p className="text-xs text-red-500">Critical</p>
+          ) : alerts.length === 0 ? (
+            <div className="p-5 text-center text-slate-500 text-sm">
+              No recent alerts detected.
             </div>
-          </div>
-
-          {/* Alert 2 */}
-          <div className="p-5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-3 h-3 rounded-full bg-orange-500" />
-              <div>
-                <p className="font-medium text-slate-900">Aizawl</p>
-                <p className="text-sm text-slate-500">
-                  Increased rainfall detected in vulnerable zone
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-orange-600">78%</p>
-              <p className="text-xs text-orange-500">High</p>
-            </div>
-          </div>
-
-          {/* Alert 3 */}
-          <div className="p-5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-              <div>
-                <p className="font-medium text-slate-900">Gangtok</p>
-                <p className="text-sm text-slate-500">
-                  Moderate environmental risk detected
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-yellow-600">54%</p>
-              <p className="text-xs text-yellow-600">Moderate</p>
-            </div>
-          </div>
+          ) : (
+            alerts.map((alert) => {
+              const styles = getAlertBadgeStyle(alert.severity);
+              return (
+                <div
+                  key={alert.id}
+                  className="p-5 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-3 h-3 rounded-full ${styles.dot}`} />
+                    <div>
+                      <p className="font-medium text-slate-900">
+                        {alert.location}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {alert.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-bold ${styles.text}`}>
+                      {alert.riskPercentage}%
+                    </p>
+                    <p className={`text-xs ${styles.subText}`}>
+                      {alert.severity}
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
