@@ -1,4 +1,4 @@
-﻿
+﻿import OpenAI from "openai";
 import 'dotenv/config'
 import express, { Request, Response } from 'express'
 import cors from 'cors'
@@ -16,14 +16,48 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 
-// Required on Render so secure cross-site cookies pass correctly
-// through reverse proxies.
 app.set('trust proxy', 1)
 
-// --------------------------------------------------
-// 1. Unified CORS Configuration
-// --------------------------------------------------
+// Middleware
+app.use(express.json())
 
+// OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
+
+// Translation API
+app.post("/api/translate", async (req, res) => {
+  try {
+    const { text } = req.body
+
+    if (!text || typeof text !== "string") {
+      res.status(400).json({
+        error: "Text is required",
+      })
+      return
+    }
+
+    const response = await openai.responses.create({
+      model: "gpt-5-mini",
+      instructions:
+        "Translate the provided English text into natural Hindi. Preserve names, numbers, locations, technical terms, and meaning. Return only the Hindi translation.",
+      input: text,
+    })
+
+    res.json({
+      original: text,
+      translated: response.output_text,
+      language: "hi",
+    })
+  } catch (error) {
+    console.error("Translation error:", error)
+
+    res.status(500).json({
+      error: "Translation failed",
+    })
+  }
+})
 const allowedCorsMiddleware = cors({
   origin: (origin, callback) => {
     // Allow requests with no origin
