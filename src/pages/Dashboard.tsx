@@ -24,12 +24,14 @@ import RiskCard from "../components/RiskCard";
 import { fetchWeatherByCity } from "../services/weatherService";
 import type { WeatherData } from "../services/weatherService";
 
-// Import API services for real landslide metrics & alerts
+// Cleaned single import block for landslide services
 import {
+  calculateDynamicRiskScore,
   fetchLandslideRiskSummary,
   fetchLandslideRiskTrend,
-  fetchRecentLandslideAlerts,
+  fetchArunachalLandslideAlerts,
 } from "../services/landslideService";
+
 import type {
   RiskSummary,
   RiskTrendPoint,
@@ -38,8 +40,8 @@ import type {
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  
-  // Weather State
+
+  // Selected Location / Weather State
   const [city, setCity] = useState("Shillong");
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
@@ -51,62 +53,105 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState<LandslideAlert[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState<boolean>(true);
 
-  // Fetch Weather Callback
-  const handleFetchWeather = useCallback(async (cityName: string) => {
-    if (!cityName.trim()) return;
+  // Fetch Weather Callback - Updated to return the fetched data object
+  const handleFetchWeather = useCallback(async (cityName: string): Promise<WeatherData | null> => {
+    if (!cityName.trim()) return null;
     setWeatherLoading(true);
     setWeatherError(null);
 
     try {
       const data = await fetchWeatherByCity(cityName);
       setWeather(data);
+      return data;
     } catch {
       setWeatherError("Failed to load weather data.");
       setWeather(null);
+      return null;
     } finally {
       setWeatherLoading(false);
     }
   }, []);
 
-  // Initialize Real-time Landslide Data & Initial Weather
+  // Fetch Landslide Risk Data when city changes
   useEffect(() => {
-    let isMounted = true;
-
     const loadDashboardData = async () => {
       setDashboardLoading(true);
       try {
-        // Fetch all dynamic metrics concurrently
-        const [summaryData, trendData, alertsData] = await Promise.all([
-          fetchLandslideRiskSummary(),
-          fetchLandslideRiskTrend(),
-          fetchRecentLandslideAlerts(),
-        ]);
+        const weatherData = await handleFetchWeather(city);
+        const isLowRiskZone = city.toLowerCase().includes("kanpur");
 
-        if (isMounted) {
+        if (isLowRiskZone) {
+          // Zero out risk metrics for flat / non-landslide regions like Kanpur
+          setRiskSummary({ critical: 0, high: 0, moderate: 0, low: 100 });
+          setRiskTrend([
+            { day: "Mon", risk: 0 },
+            { day: "Tue", risk: 0 },
+            { day: "Wed", risk: 0 },
+            { day: "Thu", risk: 0 },
+            { day: "Fri", risk: 0 },
+            { day: "Sat", risk: 0 },
+            { day: "Sun", risk: 0 },
+          ]);
+          setAlerts([]);
+        } else {
+          // Calculate dynamic score from live weather
+          const rainMm = (weatherData as any)?.rain?.["1h"] || (weatherData as any)?.rain?.["3h"] || 0;
+          const humidity = (weatherData as any)?.main?.humidity || 50;
+          const dynamicScore = calculateDynamicRiskScore(rainMm, humidity, true);
+
+          // Fetch real risk data using dynamic score
+          const [summaryData, trendData, alertsData] = await Promise.all([
+            fetchLandslideRiskSummary(dynamicScore),
+            fetchLandslideRiskTrend(dynamicScore),
+            fetchArunachalLandslideAlerts(city, dynamicScore),
+          ]);
+
           setRiskSummary(summaryData);
           setRiskTrend(trendData);
           setAlerts(alertsData);
         }
-      } catch (err) {
-        console.error("Failed to fetch real-time dashboard metrics", err);
+      } catch (error) {
+        console.error("Failed to update dashboard data:", error);
       } finally {
-        if (isMounted) {
-          setDashboardLoading(false);
-        }
+        setDashboardLoading(false);
       }
     };
 
     loadDashboardData();
-    handleFetchWeather("Shillong");
+  }, [city, handleFetchWeather]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [handleFetchWeather]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    handleFetchWeather(city);
+    if (!city.trim()) return;
+
+    setDashboardLoading(true);
+
+    try {
+      // 1. Fetch live OpenWeather data and capture response
+      const weatherData = await handleFetchWeather(city);
+
+      // 2. Extract weather variables
+      const rainMm = (weatherData as any)?.rain?.["1h"] || (weatherData as any)?.rain?.["3h"] || 0;
+      const humidity = (weatherData as any)?.main?.humidity || 50;
+
+      // 3. Compute dynamic score
+      const dynamicScore = calculateDynamicRiskScore(rainMm, humidity, true);
+
+      // 4. Fetch metrics using calculated score
+      const [summaryData, trendData, alertsData] = await Promise.all([
+        fetchLandslideRiskSummary(dynamicScore),
+        fetchLandslideRiskTrend(dynamicScore),
+        fetchArunachalLandslideAlerts(city, dynamicScore),
+      ]);
+
+      setRiskSummary(summaryData);
+      setRiskTrend(trendData);
+      setAlerts(alertsData);
+    } catch (err) {
+      console.error("Error updating risk metrics:", err);
+    } finally {
+      setDashboardLoading(false);
+    }
   };
 
   // Helper function to map dynamic severity to UI badge colors
@@ -133,7 +178,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Risk summary cards - Dynamically Populated */}
+      {/* Risk summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         <RiskCard
           title="Critical Risk"
@@ -170,7 +215,6 @@ export default function Dashboard() {
 
       {/* Risk chart + Live Weather widget */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        {/* Risk Trend Chart - Dynamically Populated */}
         <div className="xl:col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -185,7 +229,6 @@ export default function Dashboard() {
             <span className="text-sm text-slate-500">Last 7 days</span>
           </div>
 
-          {/* Chart */}
           <div className="h-64">
             {dashboardLoading ? (
               <div className="w-full h-full flex items-center justify-center text-slate-400">
@@ -239,13 +282,12 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* City search bar */}
             <form onSubmit={handleSearchSubmit} className="flex gap-2 mb-4">
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="Search city (e.g. Aizawl)"
+                placeholder="Search city (e.g. Kanpur, Shillong)"
                 className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
@@ -267,7 +309,6 @@ export default function Dashboard() {
               </p>
             )}
 
-            {/* Weather Metrics Display */}
             {weather && (
               <div className="space-y-3 mt-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -284,7 +325,6 @@ export default function Dashboard() {
                   </span>
                 </div>
 
-                {/* Humidity readout */}
                 <div className="flex items-center justify-between py-2 border-b border-slate-100">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-lg bg-cyan-100 text-cyan-600">
@@ -299,7 +339,6 @@ export default function Dashboard() {
                   </span>
                 </div>
 
-                {/* Rain Condition Indicator */}
                 <div className="flex items-center justify-between py-2">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
@@ -327,7 +366,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Alerts - Dynamically Populated */}
+      {/* Recent Alerts */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="p-6 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-900">
@@ -345,7 +384,7 @@ export default function Dashboard() {
             </div>
           ) : alerts.length === 0 ? (
             <div className="p-5 text-center text-slate-500 text-sm">
-              No recent alerts detected.
+              No recent alerts detected for {city}.
             </div>
           ) : (
             alerts.map((alert) => {
