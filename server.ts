@@ -9,7 +9,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import authRouter from './server/authRoutes.js'
-import { initializePostgres } from './server/postgresDb.js'
+import { initializePostgres, pool } from './server/postgresDb.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -283,13 +283,43 @@ const reportsStore: any[] = []
 // 7. Reports API
 // --------------------------------------------------
 
+// --------------------------------------------------
+// 7. Reports API
+// --------------------------------------------------
+
 app.get(
   '/api/reports',
-  (req: Request, res: Response) => {
-    res.status(200).json({
-      count: reportsStore.length,
-      reports: reportsStore,
-    })
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const result = await pool.query(`
+        SELECT
+          id,
+          title,
+          location,
+          category,
+          severity,
+          description,
+          reporter_name AS "reporterName",
+          reporter_contact AS "reporterContact",
+          latitude,
+          longitude,
+          attachments_count AS "attachmentsCount",
+          created_at AS "createdAt"
+        FROM reports
+        ORDER BY created_at DESC
+      `)
+
+      res.status(200).json({
+        count: result.rows.length,
+        reports: result.rows,
+      })
+    } catch (error: any) {
+      console.error('Error fetching reports:', error)
+
+      res.status(500).json({
+        error: error.message || 'Failed to fetch reports',
+      })
+    }
   }
 )
 
@@ -314,11 +344,7 @@ app.post(
         longitude,
       } = req.body
 
-      if (
-        !title ||
-        !location ||
-        !description
-      ) {
+      if (!title || !location || !description) {
         res.status(400).json({
           error:
             'Missing required report fields (title, location, description).',
@@ -328,62 +354,76 @@ app.post(
       }
 
       const uploadedFiles =
-        req.files as
-          | Express.Multer.File[]
-          | undefined
+        req.files as Express.Multer.File[] | undefined
 
-      const newReport = {
-        id: `report_${Date.now()}`,
+      const id = `report_${Date.now()}`
 
-        title,
+      const reportLatitude =
+        latitude && !isNaN(Number(latitude))
+          ? Number(latitude)
+          : null
 
-        location,
+      const reportLongitude =
+        longitude && !isNaN(Number(longitude))
+          ? Number(longitude)
+          : null
 
-        category:
+      const attachmentsCount =
+        uploadedFiles ? uploadedFiles.length : 0
+
+      const result = await pool.query(
+        `
+        INSERT INTO reports (
+          id,
+          title,
+          location,
+          category,
+          severity,
+          description,
+          reporter_name,
+          reporter_contact,
+          latitude,
+          longitude,
+          attachments_count
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6,
+          $7, $8, $9, $10, $11
+        )
+        RETURNING
+          id,
+          title,
+          location,
+          category,
+          severity,
+          description,
+          reporter_name AS "reporterName",
+          reporter_contact AS "reporterContact",
+          latitude,
+          longitude,
+          attachments_count AS "attachmentsCount",
+          created_at AS "createdAt"
+        `,
+        [
+          id,
+          title,
+          location,
           category || 'Landslide',
-
-        severity:
           severity || 'high',
-
-        description,
-
-        reporterName:
+          description,
           reporterName || null,
-
-        reporterContact:
           reporterContact || null,
-
-        latitude:
-          latitude &&
-          !isNaN(Number(latitude))
-            ? Number(latitude)
-            : null,
-
-        longitude:
-          longitude &&
-          !isNaN(Number(longitude))
-            ? Number(longitude)
-            : null,
-
-        attachmentsCount:
-          uploadedFiles
-            ? uploadedFiles.length
-            : 0,
-
-        createdAt:
-          new Date().toISOString(),
-      }
-
-      reportsStore.push(
-        newReport
+          reportLatitude,
+          reportLongitude,
+          attachmentsCount,
+        ]
       )
+
+      const newReport = result.rows[0]
 
       res.status(201).json({
         success: true,
-
-        message:
-          'Incident report submitted successfully',
-
+        message: 'Incident report submitted successfully',
         report: newReport,
       })
     } catch (error: any) {
